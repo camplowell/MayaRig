@@ -1,24 +1,11 @@
 # Autorigger
-<link href="https://cdn.jsdelivr.net/npm/remixicon@3.2.0/fonts/remixicon.css" rel="stylesheet">
-<style>
-    .box {
-        padding-left:16px;
-        padding-right:16px;
-        padding-top:8px;
-        padding-bottom:8px;
-        background-color: rgba(128, 128, 128, 0.125);
-        border-radius:4px
-    }
-</style>
+
 ## Installation
 Drag the repository folder into one of Maya's script folders.
 Ensure the script folder itself contains an `__init__.py` file.
 
-<div class="box">
-<i class="ri-folder-3-line"></i> MayaRig
-
-<i class="ri-file-code-line"></i> \_\_init\_\_.py
-</div>
+> 📁 MayaRig  
+> 📄 \_\_init\_\_.py
 
 ## Use
 To run, execute the following commands:
