@@ -1,9 +1,11 @@
 # Autorigger
 
 ## Installation
-Drag the repository folder into one of Maya's script folders.
-Ensure the script folder itself contains an `__init__.py` file.
+1. Download the repository using `Code -> Download ZIP`.  
+2. Extract the ZIP file and rename the extracted folder to `MayaRig`. Drag it into one of Maya's script folders.
+3. Create an (empty) `__init__.py` file in the script folder if there isn't one already.
 
+Maya's Scripts folder should now contain at least these two items:
 > 📁 MayaRig  
 > 📄 \_\_init\_\_.py
 
