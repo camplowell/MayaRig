@@ -4,10 +4,11 @@ from typing import List, Tuple
 
 from . import naming
 from .naming import Side, Suffix, exists
-from . import attributes, colors
+from . import attributes, colors, selection
 
 GENERATOR_ATTRIBUTE = 'autorig_limb'
 SYMMETRY_ATTRIBUTE = 'symmetrical'
+JOINT_TYPE_ATTR = 'MayaRigJoint'
 
 def get_chain(root: str):
     """Returns a list of the root's child joints in the same generator."""
@@ -23,6 +24,9 @@ def get_chain(root: str):
             children = [obj for obj in relatives if not is_root(obj)]
             frontier.extend(children)
     return chain
+
+def get_child(root:str):
+    return cmds.listRelatives(root, type='joint')[0]
 
 def variants(joints: List[str], suffix:str, * , parent_if_exists=False, clear_attributes=False, keep_root=False, root_parent = None):
     """Creates a duplicate of the given joints, keeping internal parent/child relationships
@@ -114,12 +118,15 @@ def mirror(joint: str, mirrorBehavior = True, parent_if_exists = True):
             )
     return ret
 
-def marker(side:Side, name:str, pos) -> str:
+def marker(side:Side, name:str, pos, type_:str = None) -> str:
     ret = cmds.joint(n=naming.new(side, name, Suffix.marker), p=pos)
     attributes.add_control_size(ret)
+    if not type_:
+        type_ = name
+    mark_type(ret, type_)
     return ret
 
-def orient(joint, flip_right = True, secondaryAxisOrient='yup'):
+def orient(joint, flip_right = True, secondaryAxisOrient='yup', twist=0):
     if isinstance(joint, list):
         for obj in joint:
             orient(obj, flip_right)
@@ -131,28 +138,75 @@ def orient(joint, flip_right = True, secondaryAxisOrient='yup'):
         attributes.decrement(joint, 'jointOrientY', 180)
         cmds.parent(children, joint)
 
-def coplanar_orient(obj: str, flip_right=True):
-    parent = cmds.listRelatives(obj, parent=True)[0]
+def orient_normal(obj:str, flip_right=True, normal=(0,1,0), twist=0):
     children = cmds.listRelatives(obj, children=True)
+    if children:
+        cmds.parent(children, w=True)
 
-    obj_pos = om.MVector(cmds.joint(obj, q=True, p=True))
-    parent_pos = om.MVector(cmds.joint(parent, q=True, p=True))
-    child_pos = om.MVector(cmds.joint(children[0], q=True, p=True))
-
-    to_parent = parent_pos - obj_pos
-    to_child = child_pos - parent_pos
-    cmds.parent(children, w=True)
-    normal = om.MVector((to_parent ^ to_child).normalize())
-    
     temp_constraint = cmds.aimConstraint(children[0], obj, aimVector=(1, 0, 0), upVector=(0, 1, 0), worldUpVector=normal)
     cmds.delete(temp_constraint)
     cmds.makeIdentity(obj, a=True, t=False, r=True, s=True)
     cmds.joint(obj, edit=True, zeroScaleOrient=True)
+    if twist:
+        attributes.increment(obj, 'jointOrientX', twist)
     
     if flip_right and naming.get_side(obj) == Side.RIGHT:
-        #attributes.decrement(obj, 'jointOrientX', 180)
         attributes.decrement(obj, 'jointOrientY', 180)
-    cmds.parent(children, obj)
+    
+    if children:
+        cmds.parent(children, obj)
+
+def twist_align(obj:str, normal, flip_right=True, twist=0):
+    children = cmds.listRelatives(obj, children=True)
+    if children:
+        cmds.parent(children, w=True)
+    
+    target_pos = (om.MVector(cmds.joint(obj, q=True, p=True)) +
+        om.MVector(cmds.xform(obj, q=True, m=True, ws=True)[0:3]))
+
+    tgt = cmds.createNode('transform')  # looks like locator version doesn't work on maya 2012+
+    cmds.xform(tgt, t=target_pos, a=True)
+    const = cmds.aimConstraint(tgt, obj, aimVector=(1, 0, 0), upVector=(0, 1, 0), worldUpVector=normal)
+    cmds.delete(const, tgt)
+    
+    cmds.makeIdentity(obj, a=True, t=False, r=True, s=True)
+    cmds.joint(obj, edit=True, zeroScaleOrient=True)
+
+    if twist:
+        attributes.increment(obj, 'jointOrientX', twist)
+    
+    if flip_right and naming.get_side(obj) == Side.RIGHT:
+        attributes.decrement(obj, 'jointOrientY', 180)
+    
+    if children:
+        cmds.parent(children, obj)
+
+def get_normal(objects:List[str], * , other_side = False):
+    pos0 = om.MVector(cmds.joint(objects[0], q=True, p=True))
+    pos1 = om.MVector(cmds.joint(objects[1], q=True, p=True))
+    pos2 = om.MVector(cmds.joint(objects[2], q=True, p=True))
+
+    to_parent = pos0 - pos1
+    to_child =  pos2 - pos1
+
+    normal = om.MVector((to_parent ^ to_child).normalize())
+    return -normal if other_side else normal
+
+def coplanar_orient(obj: str, flip_right=True, plane_child=None, other_side=False):
+    parent = cmds.listRelatives(obj, parent=True)[0]
+    if not plane_child:
+        plane_child = cmds.listRelatives(obj, children=True)[0]
+    
+    normal = get_normal([parent, obj, plane_child], other_side = other_side)
+
+    orient_normal(obj, flip_right, normal)
+
+def orient_match(obj:str, flip_right=True, ref:str = None, twist=0):
+    if not ref:
+        ref = cmds.listRelatives(obj, parent=True)[0]
+
+    normal = cmds.xform(ref, q=True, m=True, ws=True)[4:7]
+    orient_normal(obj, flip_right, normal, twist)
 
 def world_orient(obj:str, flip_right=False):
     parent = cmds.listRelatives(obj, parent=True)[0]
@@ -170,3 +224,50 @@ def world_orient(obj:str, flip_right=False):
         attributes.decrement(obj, 'jointOrientY', 180)
         if children:
             cmds.parent(children, obj)
+
+def twist(obj:str, degrees:float):
+    children = cmds.listRelatives(obj, children=True)
+    if children:
+        cmds.parent(children, w=True)
+
+    attributes.increment(obj, 'jointOrientX', degrees)
+
+    if children:
+        cmds.parent(children, obj)
+
+def mark_type(obj:str, type_:str):
+    if exists(obj, JOINT_TYPE_ATTR):
+        attributes.set_(obj, JOINT_TYPE_ATTR, type_)
+    else:
+        attributes.add(obj, JOINT_TYPE_ATTR, type_, type_="string")
+
+def matches_type(obj: str, type_:str):
+    return exists(obj, JOINT_TYPE_ATTR) and attributes.get(obj, JOINT_TYPE_ATTR) == type_
+
+def find_child(type_:str, obj:str) -> str:
+    for child in cmds.listRelatives(obj, type='joint', ad=True):
+        if matches_type(child, type_):
+            return child
+    return None
+
+def find_children(type_:str, obj:str, * , backwards:bool=False) -> List[str]:
+    ret = [child for child in cmds.listRelatives(obj, type='joint', ad=True) if matches_type(child, type_)]
+
+    if not backwards:
+        ret.reverse()
+    return ret
+
+def find(type_:str, joints:List[str]):
+    for obj in joints:
+        if matches_type(obj, type_):
+            return obj
+
+def find_all(type_:str, joints:List[str]):
+    return [joint for joint in joints if matches_type(joint, type_)]
+
+def find_equiv(joint:str, collection:List[str]):
+    obj_name = naming.get_name(joint)
+    for obj in collection:
+        if naming.get_name(obj) == obj_name:
+            return obj
+    return None

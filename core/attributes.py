@@ -68,6 +68,14 @@ def connect(from_obj: str, from_attr: str, to_obj: str, to_attr: str = None, for
         to_attr = from_attr
     cmds.connectAttr(attr_path(from_obj, from_attr), attr_path(to_obj, to_attr), f=force)
 
+def copy(from_obj: str, from_attr:str, to_obj:str, to_attr:str = None, type_=None):
+    if not to_attr:
+        to_attr = from_attr
+    if type_:
+        set_(to_obj, to_attr, get(from_obj, from_attr), type_=type_)
+    else:
+        set_(to_obj, to_attr, get(from_obj, from_attr))
+
 def delete(obj:str, attribute: str):
     if isinstance(obj, list):
         for i in obj:
@@ -132,3 +140,4 @@ def get_control_size(obj:str):
 
 def set_control_size(obj: str, val:float):
     set_(obj, CONTROL_SCALE, val)
+

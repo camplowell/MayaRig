@@ -8,3 +8,12 @@ def set_(obj: str):
 
 def clear():
     cmds.select(cl=True)
+
+def get():
+    return cmds.ls(sl=True)
+
+def active():
+    selected = get()
+    if selected:
+        return selected[0]
+    return None

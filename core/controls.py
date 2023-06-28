@@ -154,6 +154,22 @@ def circle_with_arrows(name:str, suffix:str, joint:str = None, parent:str = None
     else:
         return _to_pos(ret, offset, parent)
 
+def finger_root(name:str, suffix:str, joint:str, parent:str, flipped=False, * , offset = 2.0, size = 1.0):
+    name=naming.replace(joint, name=name, suffix=suffix)
+    size *= attributes.get_control_size(joint)
+    if flipped:
+        offset = -offset
+        size = -size
+    ret = cmds.curve(n=name, d=1, p=[
+        (0, 0,     0),
+        (0, 0,     offset),
+        (0, -size, offset + size),
+        (0, 0,     offset + 2 * size),
+        (0, size,  offset + size),
+        (0, 0,     offset)
+    ])
+    return _match_joint(ret, joint, parent=parent)
+
 # Transformations --------------------------------------------------------------------------------
 
 def reset_transforms(obj: str):

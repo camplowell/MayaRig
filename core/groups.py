@@ -33,7 +33,10 @@ def push_front(contents:List[str] = [], n:str = '') -> str:
     return n
 
 def empty_at(obj: str, name: str, parent=None, * , suffix=Suffix.GROUP, offset:Tuple[float, float, float] = (0, 0, 0)) -> str:
-    grp = cmds.group(n=replace(obj, name=name, suffix=suffix), em=True)
+    n = replace(obj, name=name, suffix=suffix)
+    if exists(n):
+        raise Exception("Object already exists: " + n)
+    grp = cmds.group(n=n, em=True)
     # Match the group and obj pivots
     if parent:
         cmds.parent(grp, parent)
