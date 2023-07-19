@@ -43,6 +43,7 @@ def create_controllers(driver_joints:List[str]):
 
 def create_bind_joints(driver_joints:List[str]):
     """Generates bind joints driven by the driver joints."""
+    driver_joints = [joint for joint in driver_joints if joints.to_bind(joint)]
     bind_joints = joints.variants(driver_joints, Suffix.BIND_JOINT, parent_if_exists=True)
     if joints.get_parent(driver_joints[0]) == naming.driver_grp:
         cmds.parent(bind_joints[0], naming.bind_grp)
@@ -69,53 +70,44 @@ def _create_markers(symmetrical_field, side_field, clavicle_field):
     shoulder = marker(Side.LEFT, 'shoulder', (10, 0, -4))
     if not has_clavicle:
         root = shoulder
-    elbow = marker(Side.LEFT, 'elbow', (30, 0, -4.05))
+    marker(Side.LEFT, 'elbow', (30, 0, -4.05))
     wrist = marker(Side.LEFT, 'wrist', (50, 0, -2.5))
-    
-    marker(Side.LEFT, 'thumbCMC', (52, -0.8, 0), type_='metacarpal')
-    thumb = marker(Side.LEFT, 'thumb', (54.6, -2.7, 3.1), type_='knuckle')
+    thumb = marker(Side.LEFT, 'thumb', (52, -0.8, 0), type_='knuckle')
+    thumb2 = marker(Side.LEFT, 'thumbMCP', (54.6, -2.7, 3.1), type_='finger')
     marker(Side.LEFT, 'thumbDIP', (56.5, -4.1, 4.6), type_='finger')
-    thumb_tip = marker(Side.LEFT, 'thumbTip', (58.5, -5.3, 5.9), type_='fingerTip')
-    joints.coplanar_orient(thumb, plane_child=thumb_tip, other_side=True)
+    thumb_tip = marker(Side.LEFT, 'thumbTip', (58.5, -5.3, 5.9), type_='fingerTip', bind=False)
 
-    selection.set_(wrist)
-    fingers = []
-    fingers.extend([
-        marker(Side.LEFT, 'pointerCMC', (54.0,  0.1, -0.6), type_='metacarpal'),
-        marker(Side.LEFT, 'pointer', (59.4, -0.7, 0.5), type_='knuckle'),
-        marker(Side.LEFT, 'pointerPIP', (63.5, -1.3, 1.7), type_='finger'),
-        marker(Side.LEFT, 'pointerDIP', (65.6, -1.7, 2.2), type_='finger'),
-        marker(Side.LEFT, 'pointerTip', (67.7, -2.3, 2.8), type_='fingerTip')
-    ])
+    joints.orient_normal(
+                thumb, 
+                joints.get_normal([thumb, thumb2, thumb_tip]))
 
-    selection.set_(wrist)
-    fingers.extend([
-        marker(Side.LEFT, 'middleCMC', (54.2,  0.1, -2.2), type_='metacarpal'),
-        marker(Side.LEFT, 'middle', (59.8, -0.7, -2.0), type_='knuckle'),
-        marker(Side.LEFT, 'middle2', (64.6, -1.4, -1.7), type_='finger'),
-        marker(Side.LEFT, 'middle3', (67.1, -1.9, -1.6), type_='finger'),
-        marker(Side.LEFT, 'middleTip', (69.5, -2.5, -1.5), type_='fingerTip')
-    ])
+    joints.start_chain(wrist)
+    marker(Side.LEFT, 'pointerCMC', (54.0,  0.1, -0.6), type_='metacarpal'),
+    marker(Side.LEFT, 'pointer', (59.4, -0.7, 0.5), type_='knuckle'),
+    marker(Side.LEFT, 'pointerPIP', (63.5, -1.3, 1.7), type_='finger'),
+    marker(Side.LEFT, 'pointerDIP', (65.6, -1.7, 2.2), type_='finger'),
+    marker(Side.LEFT, 'pointerTip', (67.7, -2.3, 2.8), type_='fingerTip', bind=False)
 
-    selection.set_(wrist)
-    fingers.extend([
-        marker(Side.LEFT, 'ringCMC', (54.2,  0.0, -3.7), type_='metacarpal'),
-        marker(Side.LEFT, 'ring', (59.3, -0.8, -4.5), type_='knuckle'),
-        marker(Side.LEFT, 'ring2', (63.8, -1.8, -5.1), type_='finger'),
-        marker(Side.LEFT, 'ring3', (66.0, -2.3, -5.4), type_='finger'),
-        marker(Side.LEFT, 'ringTip', (68.3, -3.0, -5.7), type_='fingerTip')
-    ])
+    joints.start_chain(wrist)
+    marker(Side.LEFT, 'middleCMC', (54.2,  0.1, -2.2), type_='metacarpal'),
+    marker(Side.LEFT, 'middle', (59.8, -0.7, -2.0), type_='knuckle'),
+    marker(Side.LEFT, 'middle2', (64.6, -1.4, -1.7), type_='finger'),
+    marker(Side.LEFT, 'middle3', (67.1, -1.9, -1.6), type_='finger'),
+    marker(Side.LEFT, 'middleTip', (69.5, -2.5, -1.5), type_='fingerTip', bind=False)
 
-    selection.set_(wrist)
-    fingers.extend([
-        marker(Side.LEFT, 'pinkyCMC', (54.0, -0.4, -5.3), type_='metacarpal'),
-        marker(Side.LEFT, 'pinky', (57.9, -1.3, -6.6), type_='knuckle'),
-        marker(Side.LEFT, 'pinky2', (61.9, -2.1, -7.8), type_='finger'),
-        marker(Side.LEFT, 'pinky3', (64.0, -2.6, -8.4), type_='finger'),
-        marker(Side.LEFT, 'pinkyTip', (66.0, -3.3, -9.0), type_='fingerTip')
-    ])
-    for joint in fingers:
-        joints.twist(joint, -90)
+    joints.start_chain(wrist)
+    marker(Side.LEFT, 'ringCMC', (54.2,  0.0, -3.7), type_='metacarpal'),
+    marker(Side.LEFT, 'ring', (59.3, -0.8, -4.5), type_='knuckle'),
+    marker(Side.LEFT, 'ring2', (63.8, -1.8, -5.1), type_='finger'),
+    marker(Side.LEFT, 'ring3', (66.0, -2.3, -5.4), type_='finger'),
+    marker(Side.LEFT, 'ringTip', (68.3, -3.0, -5.7), type_='fingerTip', bind=False)
+
+    joints.start_chain(wrist)
+    marker(Side.LEFT, 'pinkyCMC', (54.0, -0.4, -5.3), type_='metacarpal'),
+    marker(Side.LEFT, 'pinky', (57.9, -1.3, -6.6), type_='knuckle'),
+    marker(Side.LEFT, 'pinky2', (61.9, -2.1, -7.8), type_='finger'),
+    marker(Side.LEFT, 'pinky3', (64.0, -2.6, -8.4), type_='finger'),
+    marker(Side.LEFT, 'pinkyTip', (66.0, -3.3, -9.0), type_='fingerTip', bind=False)
     
     if side == Side.RIGHT:
         root_r = joints.mirror(root)
@@ -135,9 +127,9 @@ def _orient_joints(driver_joints):
 
     wrist = joints.find('wrist', driver_joints)
     knuckles = joints.find_all('knuckle', driver_joints)
-    #joints.twist_align(wrist, normal=joints.get_normal([knuckles[1], wrist, knuckles[2]]))
     for knuckle in knuckles:
-        joints.orient_match(knuckle, wrist)
+        if 'thumb' not in knuckle:
+            joints.orient_match(knuckle, wrist, twist=-90)
         for finger in joints.find_children('finger', knuckle):
             joints.orient_match(finger, knuckle)
 
@@ -289,6 +281,8 @@ def _create_hand(driver_joints, control_grp, flipped):
                 attributes.connect(fingerBend, 'outputMatrix', ctrl_parentOffset, 'matrixIn[0]')
                 attributes.copy(ctrl, 'offsetParentMatrix', ctrl_parentOffset, 'matrixIn[1]', type_='matrix')
                 attributes.connect(ctrl_parentOffset, 'matrixSum', ctrl, 'offsetParentMatrix')
+            cmds.parentConstraint(ctrl, joint)
+            cmds.scaleConstraint(ctrl, joint)
             prev = ctrl
 
     
