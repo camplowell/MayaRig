@@ -1,6 +1,6 @@
 from maya import cmds
 import maya.api.OpenMaya as om
-from typing import List, Tuple
+from typing import List
 
 from . import naming
 from .naming import Side, Suffix, exists
@@ -9,6 +9,7 @@ from . import attributes, colors, selection
 GENERATOR_ATTRIBUTE = 'autorig_limb'
 SYMMETRY_ATTRIBUTE = 'symmetrical'
 JOINT_TYPE_ATTR = 'MayaRigJoint'
+BIND_ATTR = 'Bind'
 
 def get_chain(root: str):
     """Returns a list of the root's child joints in the same generator."""
@@ -118,12 +119,13 @@ def mirror(joint: str, mirrorBehavior = True, parent_if_exists = True):
             )
     return ret
 
-def marker(side:Side, name:str, pos, type_:str = None) -> str:
+def marker(side:Side, name:str, pos, type_:str = None, bind=True) -> str:
     ret = cmds.joint(n=naming.new(side, name, Suffix.marker), p=pos)
     attributes.add_control_size(ret)
     if not type_:
         type_ = name
     mark_type(ret, type_)
+    attributes.add(ret, BIND_ATTR, bind, type_='bool')
     return ret
 
 def orient(joint, flip_right = True, secondaryAxisOrient='yup', twist=0):
@@ -139,6 +141,7 @@ def orient(joint, flip_right = True, secondaryAxisOrient='yup', twist=0):
         cmds.parent(children, joint)
 
 def orient_normal(obj:str, flip_right=True, normal=(0,1,0), twist=0):
+    sel = selection.get()
     children = cmds.listRelatives(obj, children=True)
     if children:
         cmds.parent(children, w=True)
@@ -155,6 +158,7 @@ def orient_normal(obj:str, flip_right=True, normal=(0,1,0), twist=0):
     
     if children:
         cmds.parent(children, obj)
+    selection.set_(sel)
 
 def twist_align(obj:str, normal, flip_right=True, twist=0):
     children = cmds.listRelatives(obj, children=True)
@@ -201,7 +205,7 @@ def coplanar_orient(obj: str, flip_right=True, plane_child=None, other_side=Fals
 
     orient_normal(obj, flip_right, normal)
 
-def orient_match(obj:str, flip_right=True, ref:str = None, twist=0):
+def orient_match(obj:str, ref:str = None, flip_right=True, twist=0):
     if not ref:
         ref = cmds.listRelatives(obj, parent=True)[0]
 
@@ -240,6 +244,15 @@ def mark_type(obj:str, type_:str):
         attributes.set_(obj, JOINT_TYPE_ATTR, type_)
     else:
         attributes.add(obj, JOINT_TYPE_ATTR, type_, type_="string")
+
+def start_chain(parent:str = None):
+    if parent:
+        selection.set_(parent)
+    else:
+        selection.clear()
+
+def to_bind(obj:str):
+    return attributes.get(obj, BIND_ATTR)
 
 def matches_type(obj: str, type_:str):
     return exists(obj, JOINT_TYPE_ATTR) and attributes.get(obj, JOINT_TYPE_ATTR) == type_

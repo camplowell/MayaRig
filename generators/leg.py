@@ -70,7 +70,7 @@ def create_controllers(driver_joints:List[str]):
 
 def create_bind_joints(driver_joints:List[str]):
     """Generates bind joints driven by the driver joints."""
-
+    
     hip = naming.find('hip', driver_joints)
     knee = naming.find('knee', driver_joints)
     ankle = naming.find('ankle', driver_joints)
@@ -99,14 +99,14 @@ def _create_markers(symmetrical_field, side_field):
     hip = marker(Side.LEFT, 'hip', (7, 80, 0))
     marker(Side.LEFT, 'knee', (7, 45, 1))
     ankle = marker(Side.LEFT, 'ankle', (7, 10, -1))
-    marker(Side.LEFT, 'heel', (7, 0, -9))
+    marker(Side.LEFT, 'heel', (7, 0, -9), bind=False)
     selection.set_(ankle)
     marker(Side.LEFT, 'ballOfFoot', (7, 1.5, 8))
     marker(side.LEFT, 'tipOfToe', (7, 0, 16))
     selection.set_(ankle)
-    marker(side.LEFT, 'footBankInner', (4, 0, 9))
+    marker(side.LEFT, 'footBankInner', (4, 0, 9), bind=False)
     selection.set_(ankle)
-    marker(side.LEFT, 'footBankOuter', (14, 0, 7))
+    marker(side.LEFT, 'footBankOuter', (14, 0, 7), bind=False)
 
     if side == Side.RIGHT:
         hip_r = joints.mirror(hip)
