@@ -11,33 +11,37 @@ def get(obj: str, attr: str) -> Any:
         return ret[0]
     return ret
 
-def set_(obj: str, attr: str, value, type_: str=None, lock:bool=False, keyable:bool=False):
+def set_(obj: str, attr: str, value, type_: str=None, lock:bool=False, keyable:bool=False, channelBox = True):
     if isinstance(value, str):
         type_='string'
     if type_ in ['bool', 'short', 'long', 'float', 'double', 'int', 'float']:
         type_=None
     if isinstance(value, tuple):
         if type_:
-            return cmds.setAttr(attr_path(obj, attr), *value, type=type_, l=lock, k=keyable)
+            return cmds.setAttr(attr_path(obj, attr), *value, type=type_, l=lock, k=keyable, cb=channelBox)
         else:
-            return cmds.setAttr(attr_path(obj, attr), *value, l=lock, k=keyable)
+            return cmds.setAttr(attr_path(obj, attr), *value, l=lock, k=keyable, cb=channelBox)
     else:
         if type_:
-            return cmds.setAttr(attr_path(obj, attr), value, type=type_, l=lock, k=keyable)
+            return cmds.setAttr(attr_path(obj, attr), value, type=type_, l=lock, k=keyable, cb=channelBox)
         else:
-            return cmds.setAttr(attr_path(obj, attr), value, l=lock, k=keyable)
+            return cmds.setAttr(attr_path(obj, attr), value, l=lock, k=keyable, cb=channelBox)
     
 def add(obj: str, attr: str, value, type_:str, lock:bool=False, hidden:bool=False, keyable:bool=False, * , niceName:str=None):
-    selection = cmds.ls(selection=True)
-    cmds.select(obj, r=True)
     if type_ in DATA_TYPES:
-        cmds.addAttr(ln=attr, dt=type_, h=hidden)
+        cmds.addAttr(obj, ln=attr, dt=type_, h=hidden)
     else:
-        cmds.addAttr(ln=attr, at=type_, h=hidden)
+        cmds.addAttr(obj, ln=attr, at=type_, h=hidden)
+        
     if niceName:
         cmds.addAttr(attr_path(obj, attr), e=True, nn=niceName)
-    cmds.select(selection, r=True)
     set_(obj, attr, value, type_, lock, keyable)
+
+def set_or_add(obj:str, attr:str, value, type_:str):
+    if exists(obj, attr):
+        set_(obj, attr, value, type_)
+    else:
+        add(obj, attr, value, type_)
 
 def add_enum(obj:str, attr:str, values, active:int, hidden:bool=False, keyable=False, niceName:str=None):
     cmds.addAttr(obj, ln=attr, at='enum', en=values, h=hidden)
