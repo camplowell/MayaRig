@@ -34,6 +34,10 @@ def create_controllers(driver_joints:List[str]):
     systems_grp = groups.systems_group(driver_joints[0], name)
     flipped=naming.get_side(driver_joints[0]) == Side.RIGHT
 
+    clavicle = joints.find('clavicle', driver_joints)
+    if joints.get_parent(clavicle) == naming.driver_grp:
+        cmds.parentConstraint(naming.root_control, joints.find('clavicle', driver_joints))
+
     fk = _create_fk(driver_joints, control_grp, systems_grp, flipped)
     ik = _create_ik(driver_joints, control_grp, systems_grp, flipped)
 

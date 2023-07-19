@@ -65,7 +65,7 @@ def systems_group(root_driver:str, name:str) -> str:
     ret = empty_at(root_driver, name, parent=naming.systems_grp, suffix=Suffix.SYSTEM_GROUP)
     driver_parent = joints.get_parent(root_driver)
     if (driver_parent == naming.driver_grp):
-        driver_parent = naming.compose(Side.CENTER, "root", "control")
+        driver_parent = naming.root_control
     cmds.parentConstraint(driver_parent, ret)
     cmds.scaleConstraint(driver_parent, ret)
     return ret
