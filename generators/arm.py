@@ -35,8 +35,13 @@ def create_controllers(driver_joints:List[str]):
     flipped=naming.get_side(driver_joints[0]) == Side.RIGHT
 
     clavicle = joints.find('clavicle', driver_joints)
-    if joints.get_parent(clavicle) == naming.driver_grp:
-        cmds.parentConstraint(naming.root_control, joints.find('clavicle', driver_joints))
+    clavicle_parent = joints.get_parent(clavicle)
+    clavicle_offset = groups.empty_at(clavicle, 'clavicleOffset', parent=clavicle_parent)
+
+    if clavicle_parent == naming.driver_grp:
+        cmds.parentConstraint(naming.root_control, clavicle_offset, mo=True)
+
+    cmds.parent(clavicle, clavicle_offset)
 
     fk = _create_fk(driver_joints, control_grp, systems_grp, flipped)
     ik = _create_ik(driver_joints, control_grp, systems_grp, flipped)
@@ -49,7 +54,7 @@ def create_bind_joints(driver_joints:List[str]):
     """Generates bind joints driven by the driver joints."""
     driver_joints = [joint for joint in driver_joints if joints.to_bind(joint)]
     bind_joints = joints.variants(driver_joints, Suffix.BIND_JOINT, parent_if_exists=True)
-    if joints.get_parent(driver_joints[0]) == naming.driver_grp:
+    if joints.get_parent(driver_joints[0]).endswith(Suffix.GROUP):
         cmds.parent(bind_joints[0], naming.bind_grp)
     
     for i in range(len(driver_joints)):
@@ -228,13 +233,15 @@ def _create_ik(driver_joints, control_grp, systems_grp, flipped):
     return ik
 
 def _ik_switch(driver_joints, fk, ik, control_grp, flipped):
+    wrist = naming.find('wrist', driver_joints)
     switch, invert = controls.ik_switch(
         name,
-        naming.find('wrist', driver_joints),
+        wrist,
         offset = (0, 1.0, -1.5),
         parent = control_grp,
         flipped = flipped
     )
+    cmds.parentConstraint(wrist, switch, mo=True)
 
     for i in range(len(fk)):
         fk_joint = fk[i]
