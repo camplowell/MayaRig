@@ -128,17 +128,21 @@ def marker(side:Side, name:str, pos, type_:str = None, bind=True) -> str:
     attributes.add(ret, BIND_ATTR, bind, type_='bool')
     return ret
 
+def _flip_joint_orientation(joint):
+    children = cmds.listRelatives(joint, c=True)
+    if children:
+        cmds.parent(children, w=True)
+    attributes.multiply(joint, 'jointOrientX', -1)
+    attributes.decrement(joint, 'jointOrientY', 180)
+    cmds.parent(children, joint)
+
 def orient(joint, flip_right = True, secondaryAxisOrient='yup', twist=0):
     if isinstance(joint, list):
         for obj in joint:
             orient(obj, flip_right)
     cmds.joint(joint, e=True, oj='xyz', secondaryAxisOrient=secondaryAxisOrient, ch=False, zso=True)
     if flip_right and naming.get_side(joint) == Side.RIGHT:
-        children = cmds.listRelatives(joint, c=True)
-        cmds.parent(children, w=True)
-        attributes.decrement(joint, 'jointOrientX', 180)
-        attributes.decrement(joint, 'jointOrientY', 180)
-        cmds.parent(children, joint)
+        _flip_joint_orientation(joint)
 
 def orient_normal(obj:str, flip_right=True, normal=(0,1,0), twist=0):
     sel = selection.get()
@@ -221,13 +225,7 @@ def world_orient(obj:str, flip_right=False):
     cmds.parent(obj, parent)
     
     if flip_right and naming.get_side(obj) == Side.RIGHT:
-        children = cmds.listRelatives(obj, children=True)
-        if children:
-            cmds.parent(children, w=True)
-        attributes.decrement(obj, 'jointOrientX', 180)
-        attributes.decrement(obj, 'jointOrientY', 180)
-        if children:
-            cmds.parent(children, obj)
+        _flip_joint_orientation(obj)
 
 def twist(obj:str, degrees:float):
     children = cmds.listRelatives(obj, children=True)
