@@ -11,7 +11,7 @@ SYMMETRY_ATTRIBUTE = 'symmetrical'
 JOINT_TYPE_ATTR = 'MayaRigJoint'
 BIND_ATTR = 'Bind'
 
-def get_chain(root: str):
+def get_chain(root: str) -> List[str]:
     """Returns a list of the root's child joints in the same generator."""
     if not is_root(root):
         raise Exception("Invalid chain root: ", root)
@@ -26,10 +26,10 @@ def get_chain(root: str):
             frontier.extend(children)
     return chain
 
-def get_child(root:str):
+def get_child(root:str) -> List[str]:
     return cmds.listRelatives(root, type='joint')[0]
 
-def variants(joints: List[str], suffix:str, * , parent_if_exists=False, clear_attributes=False, keep_root=False, root_parent = None):
+def variants(joints: List[str], suffix:str, * , parent_if_exists=False, clear_attributes=False, keep_root=False, root_parent = None) -> List[str]:
     """Creates a duplicate of the given joints, keeping internal parent/child relationships
     Does not recreate bones if they exist already.
     """
@@ -53,13 +53,13 @@ def variants(joints: List[str], suffix:str, * , parent_if_exists=False, clear_at
                 cmds.parent(new_joint, desired_parent)
     return ret
 
-def get_parent(obj: str):
+def get_parent(obj: str) -> str:
     parent_list = cmds.listRelatives(obj, p=True)
     if parent_list:
         return parent_list[0]
     return None    
 
-def is_root(obj: str):
+def is_root(obj: str) -> bool:
     """Returns if the given joint is the root of a limb"""
     return exists(obj, GENERATOR_ATTRIBUTE) and exists(obj, SYMMETRY_ATTRIBUTE)
 
@@ -67,6 +67,9 @@ def get_generator(obj: str) -> str:
     if not is_root(obj):
         raise Exception("Tried to get generator of non-root joint:", obj)
     return attributes.get(obj, GENERATOR_ATTRIBUTE)
+
+def get_position(obj: str) -> om.MVector:
+    return om.MVector(cmds.joint(obj, q=True, p=True))
 
 def is_symmetrical(obj: str) -> bool:
     if not is_root(obj):

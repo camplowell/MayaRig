@@ -1,5 +1,6 @@
 from maya import cmds
 from typing import List
+import maya.api.OpenMaya as om
 from ..core import *
 from ..core.joints import marker
 
@@ -35,16 +36,31 @@ def create_controllers(driver_joints:List[str]):
     flipped=naming.get_side(driver_joints[0]) == Side.RIGHT
 
     clavicle = joints.find('clavicle', driver_joints)
-    clavicle_parent = joints.get_parent(clavicle)
-    clavicle_offset = groups.empty_at(clavicle, 'clavicleOffset', parent=clavicle_parent)
+    shoulder_loc = None
+    if clavicle:
+        clavicle_parent = joints.get_parent(clavicle)
+        clavicle_offset = groups.empty_at(clavicle, 'clavicleOffset', parent=clavicle_parent)
 
-    if clavicle_parent == naming.driver_grp:
-        cmds.parentConstraint(naming.root_control, clavicle_offset, mo=True)
+        if clavicle_parent == naming.driver_grp:
+            cmds.parentConstraint(naming.root_control, clavicle_offset, mo=True)
 
-    cmds.parent(clavicle, clavicle_offset)
+        cmds.parent(clavicle, clavicle_offset)
 
-    fk = _create_fk(driver_joints, control_grp, systems_grp, flipped)
-    ik = _create_ik(driver_joints, control_grp, systems_grp, flipped)
+        clavicle_curve = clavicle_control(
+            'shoulder',
+            Suffix.CONTROL,
+            clavicle,
+            parent=control_grp,
+            flipped=flipped
+        )
+        cmds.parentConstraint(clavicle_curve, clavicle, mo=True)
+
+        shoulder = joints.find('shoulder', driver_joints)
+        shoulder_loc = groups.empty_at(shoulder, "shoulder_location", parent=systems_grp)
+        cmds.parentConstraint(clavicle, shoulder_loc, mo=True)
+
+    fk = _create_fk(driver_joints, control_grp, systems_grp, flipped, shoulder_loc=shoulder_loc)
+    ik = _create_ik(driver_joints, control_grp, systems_grp, flipped, shoulder_loc=shoulder_loc)
 
     _ik_switch(driver_joints, fk, ik, control_grp, flipped)
 
@@ -142,7 +158,7 @@ def _orient_joints(driver_joints):
         for finger in joints.find_children('finger', knuckle):
             joints.orient_match(finger, knuckle)
 
-def _create_fk(driver_joints, control_grp, systems_grp, flipped):
+def _create_fk(driver_joints, control_grp, systems_grp, flipped, shoulder_loc):
     driver_joints = [
         joints.find('shoulder', driver_joints),
         joints.find('elbow', driver_joints),
@@ -160,7 +176,8 @@ def _create_fk(driver_joints, control_grp, systems_grp, flipped):
     )
     attributes.connect(shoulder_ctrl, 'rotate', shoulder)
     attributes.connect(shoulder_ctrl, 'scale', shoulder)
-    attributes.lock(shoulder_ctrl, ['translate'])
+    #attributes.lock(shoulder_ctrl, ['translate'])
+    cmds.pointConstraint(shoulder_loc, shoulder_ctrl)
 
     elbow = joints.find('elbow', fk)
     elbow_ctrl = controls.circle(
@@ -187,7 +204,7 @@ def _create_fk(driver_joints, control_grp, systems_grp, flipped):
     attributes.delete_all(fk)
     return fk
     
-def _create_ik(driver_joints, control_grp, systems_grp, flipped):
+def _create_ik(driver_joints, control_grp, systems_grp, flipped, shoulder_loc):
     driver_joints = [
         joints.find('shoulder', driver_joints),
         joints.find('elbow', driver_joints),
@@ -200,9 +217,11 @@ def _create_ik(driver_joints, control_grp, systems_grp, flipped):
     elbow = naming.find('elbow', ik)
     wrist = naming.find('wrist', ik)
 
+    cmds.pointConstraint(shoulder_loc, shoulder)
+
     handle = naming.replace(wrist, name=name, suffix=Suffix.IK_HANDLE)
     cmds.ikHandle(n=handle, sj=shoulder, ee=wrist, solver='ikRPsolver')
-    cmds.parent(handle, control_grp) 
+    cmds.parent(handle, systems_grp) 
     controls.set_rest_pose(handle)
 
     pole = controls.ik_pole(
@@ -296,4 +315,41 @@ def _create_hand(driver_joints, control_grp, flipped):
             cmds.scaleConstraint(ctrl, joint)
             prev = ctrl
 
-    
+# Arm Specific Controls ==========================================================================
+
+def clavicle_control(name: str, suffix:str, joint:str, parent:str, flipped=False, * , size=6):
+    name = naming.replace(joint, name=name, suffix=suffix)
+    joint_pos = joints.get_position(joint)
+    joint_child = joints.get_child(joint)
+    child_pos = joints.get_position(joint_child)
+
+    shoulder_length = child_pos.x - joint_pos.x
+
+    radius = attributes.get_control_size(joint) * size
+
+    arc0 = cmds.circle(n='temp#', r=radius, nr=(1, 0, 0), sw=90)[0]
+    arc1 = cmds.circle(n="temp#", r=radius, nr=(1, 0, 0), sw=90)[0]
+    cmds.move(0.50 * shoulder_length, 0, 0, arc0)
+    cmds.move(0.75 * shoulder_length, 0, 0, arc1)
+    line0 = cmds.curve(
+        n='temp#',
+        d=1,
+        p=[
+            (0.50 * shoulder_length, radius, 0),
+            (0.75 * shoulder_length, radius, 0)
+        ]
+    )
+    line1 = cmds.curve(
+        n='temp#',
+        d=1,
+        p=[
+            (0.50 * shoulder_length, 0, radius),
+            (0.75 * shoulder_length, 0, radius)
+        ]
+    )
+    cmds.rotate(-45, 0, 0, [arc0, arc1, line0, line1])
+    cmds.move(0, child_pos.y - joint_pos.y, child_pos.z - joint_pos.z, [arc0, arc1, line0, line1], r=True)
+    cmds.move(0, 0, 0, arc0+".scalePivot", arc0+".rotatePivot", absolute=True)
+
+    ret = controls._combine([arc0, arc1, line0, line1], name)
+    return controls._to_pos(ret, (joint_pos.x, joint_pos.y, joint_pos.z), parent=parent)
