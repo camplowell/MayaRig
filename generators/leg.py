@@ -236,8 +236,12 @@ def _create_ik(driver_joints, reverse_foot_drivers, control_grp, systems_grp, fl
     attributes.set_(bank_cond, 'colorIfFalse.colorIfFalseR', 0)
     attributes.connect(foot_ctrl, 'bank', bank_cond, 'colorIfFalse.colorIfFalseG')
     attributes.connect(foot_ctrl, 'bank', bank_cond, 'colorIfTrue.colorIfTrueR')
-    attributes.connect(bank_cond, 'outColor.outColorR', inner_piv, 'rotateZ')
-    attributes.connect(bank_cond, 'outColor.outColorG', outer_piv, 'rotateZ')
+    if (flipped):
+        attributes.connect(bank_cond, 'outColor.outColorG', inner_piv, 'rotateZ')
+        attributes.connect(bank_cond, 'outColor.outColorR', outer_piv, 'rotateZ')
+    else:
+        attributes.connect(bank_cond, 'outColor.outColorR', inner_piv, 'rotateZ')
+        attributes.connect(bank_cond, 'outColor.outColorG', outer_piv, 'rotateZ')
 
     roll_sub = nodes.subtract(naming.replace(ankle, name='footRoll', suffix='sub'))
     attributes.connect(foot_ctrl, 'rollForward', roll_sub, 'input1D[0]')
