@@ -24,6 +24,8 @@ If a marker group is already selected when the script is run, it will directly o
 ### Editor
 Select a type of limb to create.
 The rigger can then place the generated joints and parent the limbs to each other.  
+Control radius can be changed per marker using the `Control Scale` attribute.
+
 Once you are done, press `Create Metarig` to (re)generate a rig based on the marker joints.
 
 ## Limb Types
