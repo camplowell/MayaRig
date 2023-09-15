@@ -46,13 +46,29 @@ def square(name: str, suffix:str, joint:str, parent:str, flipped=False, * , size
 
 def ik_pole(name: str, joint: str, parent:str=None, * , size: float = 2, dist=2.0, center_on_parent=False):
     name = naming.replace(joint, name=name, suffix='pole')
-    radius = 0.5 * size * attributes.get_control_size(joint)
+    r = 0.5 * size * attributes.get_control_size(joint)
 
+    ret = cmds.curve(n=name, d=1, p=[
+        ( r, 0, 0),
+        ( 0, r, 0),
+        (-r, 0, 0),
+        ( 0,-r, 0),
+        ( r, 0, 0),
+        ( 0, 0, r),
+        ( 0, r, 0),
+        ( 0, 0,-r),
+        (-r, 0, 0),
+        ( 0, 0, r),
+        ( 0,-r, 0),
+        ( 0, 0,-r),
+        ( r, 0, 0),
+    ])
+    """
     circle_x = cmds.circle(nr=(1, 0, 0), r=radius)[0]
     circle_y = cmds.circle(nr=(0, 1, 0), r=radius)[0]
     circle_z = cmds.circle(nr=(0, 0, 1), r=radius)[0]
     ret = _combine([circle_x, circle_y, circle_z], name)
-
+"""
     pos = _pole_position(joint, dist, center_on_parent=center_on_parent)
     return _to_pos(ret, pos, parent)
 
