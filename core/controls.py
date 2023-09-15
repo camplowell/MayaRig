@@ -157,6 +157,7 @@ def circle_with_arrows(name:str, suffix:str, joint:str = None, parent:str = None
 def finger_root(name:str, suffix:str, joint:str, parent:str, flipped=False, * , offset = 2.0, size = 1.0):
     name=naming.replace(joint, name=name, suffix=suffix)
     size *= attributes.get_control_size(joint)
+    offset *= size
     if flipped:
         offset = -offset
         size = -size
