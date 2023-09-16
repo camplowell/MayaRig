@@ -205,7 +205,9 @@ def _create_ik(driver_joints, reverse_foot_drivers, control_grp, systems_grp, fl
         parent=control_grp,
         flipped=flipped
     )
-    cmds.parentConstraint(naming.root_control, foot_ctrl, mo=True)
+    foot_offset = groups.new_at(foot_ctrl, name='ikFoot', suffix=Suffix.IK_OFFSET, parent=control_grp, contents=[foot_ctrl])
+    cmds.parentConstraint(naming.root_control, foot_offset, mo=True)
+
     attributes.add(foot_ctrl, 'rollBack', 0, type_='float', keyable=True)
     attributes.set_range(foot_ctrl, 'rollBack', min_=0, max_=180)
     attributes.add(foot_ctrl, 'rollForward', 0, type_='float', keyable=True)
