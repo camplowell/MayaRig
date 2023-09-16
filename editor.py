@@ -102,4 +102,6 @@ def create_rig_groups():
     groups.push_front([naming.control_grp, naming.no_touch_grp], n=naming.character_grp)
 
 def create_layout_control():
-    return controls.circle_with_arrows("layout", "control", parent=naming.control_grp, radius=50)
+    ctrl = controls.circle_with_arrows("layout", "control", parent=naming.control_grp, radius=50)
+    naming.root_control = ctrl
+    return ctrl

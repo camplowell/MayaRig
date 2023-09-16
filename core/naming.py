@@ -27,6 +27,7 @@ class Suffix(str, Enum):
     IK_CONTROL = 'ikControl'
     FK_CONTROL = 'fkControl'
     IK_HANDLE = 'ikHandle'
+    IK_OFFSET = 'offset'
     TWEAK_CONTROL = 'tweakControl'
 
 # Attributes
@@ -74,7 +75,7 @@ def set_active_character(name: str, initials: str):
     systems_grp = _initials + '_SYSTEMS'
     no_touch_grp = _initials + '_DO_NOT_TOUCH'
 
-    root_control = compose(Side.CENTER, 'root', Suffix.CONTROL)
+    
 
 # Query scene ------------------------------------------------------------------------------------
 
