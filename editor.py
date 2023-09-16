@@ -45,7 +45,7 @@ def create_metarig(registered_generators):
     create_rig_groups()
     create_driver_bones()
 
-    create_root_control()
+    create_layout_control()
     chains = get_roots()
     for generator, chain in chains:
         registered_generators[generator].create_controllers(chain)
@@ -101,5 +101,5 @@ def create_rig_groups():
 
     groups.push_front([naming.control_grp, naming.no_touch_grp], n=naming.character_grp)
 
-def create_root_control():
-    ctrl = controls.circle_with_arrows("root", "control", parent=naming.control_grp, radius=50)
+def create_layout_control():
+    return controls.circle_with_arrows("layout", "control", parent=naming.control_grp, radius=50)
