@@ -1,23 +1,23 @@
 import math
 from maya import cmds
 import maya.api.OpenMaya as om
-from typing import List
+from typing import List, Tuple
 
 from . import naming, groups, attributes, nodes
 from .naming import Side, Suffix
 
 # Control curves
 
-def circle(name:str, suffix:str, joint:str, parent:str, flipped=False, * , radius=4, slide=0):
+def circle(name:str, suffix:str, joint:str, parent:str, flipped:bool=False, * , radius:float=4, slide:float=0, normal:Tuple[float, float, float]=(1, 0, 0)):
     name = naming.replace(joint, name=name, suffix=suffix)
     if flipped:
         slide = -slide
     radius *= attributes.get_control_size(joint)
-    ret = cmds.circle(n=name, nr = (1, 0, 0), cx = slide, r=radius)[0]
+    ret = cmds.circle(n=name, nr = normal, cx = slide, r=radius)[0]
 
     return _match_joint(ret, joint, parent=parent)
 
-def ellipse(name:str, suffix:str, joint:str, parent:str, * , normal=(1, 0, 0), size=(4, 4, 4)):
+def ellipse(name:str, suffix:str, joint:str, parent:str, * , normal:Tuple[float, float, float]=(1, 0, 0), size:Tuple[float, float, float]=(4, 4, 4)):
     name = naming.replace(joint, name=name, suffix=suffix)
     scale=attributes.get_control_size(joint)
     ret = cmds.circle(n=name, nr=normal, r=1)[0]
@@ -30,7 +30,7 @@ def ellipse(name:str, suffix:str, joint:str, parent:str, * , normal=(1, 0, 0), s
     cmds.makeIdentity(a=True, s=True)
     return _match_joint(ret, joint, parent=parent)
 
-def square(name: str, suffix:str, joint:str, parent:str, flipped=False, * , size=4, slide=0):
+def square(name: str, suffix:str, joint:str, parent:str, flipped:bool=False, * , size:float=4, slide:float=0):
     name=naming.replace(joint, name=name, suffix=suffix)
     size *= attributes.get_control_size(joint)
     if flipped:
@@ -44,7 +44,7 @@ def square(name: str, suffix:str, joint:str, parent:str, flipped=False, * , size
     ])
     return _match_joint(ret, joint, parent=parent)
 
-def ik_pole(name: str, joint: str, parent:str=None, * , size: float = 2, dist=2.0, center_on_parent=False):
+def ik_pole(name: str, joint: str, parent:str=None, * , size:float=2, dist:float=2.0, center_on_parent:bool=False):
     name = naming.replace(joint, name=name, suffix='pole')
     r = 0.5 * size * attributes.get_control_size(joint)
 
@@ -72,7 +72,7 @@ def ik_pole(name: str, joint: str, parent:str=None, * , size: float = 2, dist=2.
     pos = _pole_position(joint, dist, center_on_parent=center_on_parent)
     return _to_pos(ret, pos, parent)
 
-def ik_switch(name: str, joint:str, offset, parent:str, flipped=False, * , size=5):
+def ik_switch(name: str, joint:str, offset, parent:str, flipped=False, * , size:float=5):
     name = naming.replace(joint, name=name, suffix=Suffix.IK_SWITCH)
     size *= attributes.get_control_size(joint)
     fk = _text_curve('fk#', text='FK', scale=size)
@@ -128,7 +128,7 @@ def foot(name:str, ankle:str, heel:str, toe:str, inner:str, outer:str, parent:st
     )
     return _match_joint(ankle_ctrl, ankle, parent=parent)
 
-def circle_with_arrows(name:str, suffix:str, joint:str = None, parent:str = None, * , offset = (0, 0, 0), radius=5, arrow_width=0.125, arrow_length=0.125):
+def circle_with_arrows(name:str, suffix:str, joint:str = None, parent:str = None, * , offset = (0, 0, 0), radius=12, arrow_width=0.125, arrow_length=0.125):
     if joint:
         radius *= attributes.get_control_size(joint)
         name = naming.replace(joint, name=name, suffix=suffix)
@@ -169,6 +169,20 @@ def circle_with_arrows(name:str, suffix:str, joint:str = None, parent:str = None
         return _match_joint(ret, joint, parent=parent, offset=offset)
     else:
         return _to_pos(ret, offset, parent)
+
+def saddle(name:str, suffix:str, joint:str, parent:str, * , radius:float=8.0, depth:float=4.0, normal:Tuple[float, float, float]=(0, 1, 0)):
+    name = naming.replace(joint, name=name, suffix=suffix)
+    size = attributes.get_control_size(joint)
+    radius *= size
+    depth *= size
+    ret = cmds.circle(n=name, nr = normal, r=radius)[0]
+    normal = om.MVector(normal)
+    offset = om.MVector(normal) * depth
+
+    cmds.move(offset.x, offset.y, offset.z, ret+".cv[3]", ret+".cv[7]", r=True)
+    cmds.move(-offset.x, -offset.y, -offset.z, ret+".cv[1]", ret+".cv[5]", r=True)
+
+    return _match_joint(ret, joint, parent=parent)
 
 def finger_root(name:str, suffix:str, joint:str, parent:str, flipped=False, * , offset = 2.0, size = 1.0):
     name=naming.replace(joint, name=name, suffix=suffix)

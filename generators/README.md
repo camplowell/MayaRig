@@ -1,10 +1,15 @@
 # Generators
 Generators are responsible for creating the actual rig.
 
-In order to play nice with the rest of the program, they need a few things:
+In order to play nice with the rest of the program, they need a few public methods.  
+Here is a template for a generator:
 
 ```python
-name = "the_generator_name"
+from maya import cmds
+from typing import List
+from ..core import *
+
+name = "generator_name"
 
 def create_menu():
     """Returns a layout containing:
@@ -18,6 +23,14 @@ def create_controllers(driver_joints:List[str]):
 def create_bind_joints(driver_joints:List[str]):
     """Generates bind joints driven by the driver joints."""
 ```
+
+When creating the marker joints, any joints with no parents inside the generator should be marked as root:
+
+```python
+joints.mark_root(marker, name, is_symmetrical)
+```
+
+This tells the code to delegate generation of controls back to you later.
 
 ## Modifying the Driver Bones
 `generate_controllers` can modify the structure of the driver skeleton.  

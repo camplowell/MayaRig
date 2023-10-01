@@ -1,6 +1,6 @@
 from maya import cmds
 import maya.api.OpenMaya as om
-from typing import List
+from typing import List, Tuple
 
 from . import naming
 from .naming import Side, Suffix, exists
@@ -122,7 +122,7 @@ def mirror(joint: str, mirrorBehavior = True, parent_if_exists = True):
             )
     return ret
 
-def marker(side:Side, name:str, pos, type_:str = None, bind=True) -> str:
+def marker(side:Side, name:str, pos:Tuple[float, float, float], type_:str = None, bind=True) -> str:
     ret = cmds.joint(n=naming.new(side, name, Suffix.marker), p=pos)
     attributes.add_control_size(ret)
     if not type_:

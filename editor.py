@@ -2,7 +2,7 @@ from maya import cmds
 from typing import List, Tuple
 from .core import *
 
-from .generators import simple, arm, leg
+from .generators import simple, arm, leg, torso
 
 def open_():
     win = 'autorig_edit'
@@ -29,6 +29,7 @@ def open_():
     register_generator(simple, tabs, createMenu, registered_generators)
     register_generator(arm, tabs, createMenu, registered_generators)
     register_generator(leg, tabs, createMenu, registered_generators)
+    register_generator(torso, tabs, createMenu, registered_generators)
 
     cmds.tabLayout(createTabs, edit=True, tabLabel=tabs)
     cmds.setParent(mainLayout)
