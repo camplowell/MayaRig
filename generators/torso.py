@@ -22,13 +22,14 @@ def create_menu():
 def create_controllers(driver_joints:List[str]):
     """Generates controllers for the driver joints.
     May modify the structure of the driver skeleton."""
-    hip_bone = driver_joints[0]
-    control_grp = groups.create_control_group(hip_bone, name)
+    cog_bone = joints.find("CoG_simple", driver_joints)
+    pelvis_bone = joints.find("pelvis", driver_joints)
+    control_grp = groups.create_control_group(cog_bone, name)
 
-    cog_controller = controls.circle_with_arrows("centerOfGravity", suffix=Suffix.CONTROL, joint=hip_bone, parent=control_grp)
-    hip_controller = controls.saddle("hip", suffix=Suffix.CONTROL, joint=hip_bone, parent=cog_controller)
+    cog_controller = controls.circle_with_arrows("centerOfGravity", suffix=Suffix.CONTROL, joint=cog_bone, parent=control_grp, radius=20)
+    pelvis_controller = controls.saddle("hip", suffix=Suffix.CONTROL, joint=pelvis_bone, parent=cog_controller, radius=16)
 
-    cmds.parentConstraint(hip_controller, hip_bone)
+    cmds.parentConstraint(pelvis_controller, pelvis_bone)
 
 def create_bind_joints(driver_joints:List[str]):
     """Generates bind joints driven by the driver joints."""
@@ -46,5 +47,7 @@ def create_bind_joints(driver_joints:List[str]):
 # IMPLEMENTATION =================================================================================
 
 def _create_markers(type_field):
-    marker = joints.marker(Side.CENTER, "centerOfGravity", (0, 0, 0), type_="CoG_simple")
-    joints.mark_root(marker, name)
+    center_of_gravity = joints.marker(Side.CENTER, "centerOfGravity", (0, 0, 0), type_="CoG_simple", bind=False)
+    attributes.set_(center_of_gravity, 'radius', 2)
+    pelvis = joints.marker(Side.CENTER, "pelvis", (0, 0, 0), type_="pelvis")
+    joints.mark_root(center_of_gravity, name)
