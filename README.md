@@ -42,6 +42,10 @@ Re-orients all markers except the wrist, and automatically places a pole vector 
 Creates a humanoid leg with a reverse foot and an FK/IK switch.
 Re-orients all markers, and automatically places a pole vector control.
 
+### Torso
+Creates a torso.
+Preserves the orientation of all torso markers (generally oriented to world)
+
 ## Layers of the Rig
 
 ### Control layer
