@@ -26,7 +26,7 @@ def get_chain(root: str) -> List[str]:
             frontier.extend(children)
     return chain
 
-def get_child(root:str) -> List[str]:
+def get_child(root:str) -> str:
     return cmds.listRelatives(root, type='joint')[0]
 
 def variants(joints: List[str], suffix:str, * , parent_if_exists=False, clear_attributes=False, keep_root=False, root_parent = None) -> List[str]:
@@ -57,7 +57,7 @@ def get_parent(obj: str) -> str:
     parent_list = cmds.listRelatives(obj, p=True)
     if parent_list:
         return parent_list[0]
-    return None    
+    return None
 
 def is_root(obj: str) -> bool:
     """Returns if the given joint is the root of a limb"""
@@ -81,6 +81,9 @@ def mark_root(joint: str, limb_type: str, symmetrical:bool=False):
     attributes.add(joint, SYMMETRY_ATTRIBUTE, symmetrical, type_='bool')
     if is_symmetrical:
         colors.set_(joint, 'midtone blue')
+    if not get_parent(joint):
+        cmds.parent(joint, naming.marker_grp)
+
 def clear_root(joint:str):
     if exists(joint, GENERATOR_ATTRIBUTE):
         attributes.delete(joint, GENERATOR_ATTRIBUTE)
@@ -138,6 +141,13 @@ def _flip_joint_orientation(joint):
     attributes.multiply(joint, 'jointOrientX', -1)
     attributes.decrement(joint, 'jointOrientY', 180)
     cmds.parent(children, joint)
+
+def offset_to(joint, joint2=None) -> om.MVector:
+    if not joint2:
+        joint2 = get_child(joint)
+    pos = om.MVector(cmds.joint(joint, q=True, p=True))
+    pos2 = om.MVector(cmds.joint(joint2, q=True, p=True))
+    return pos2 - pos
 
 def orient(joint, flip_right = True, secondaryAxisOrient='yup', twist=0):
     if isinstance(joint, list):

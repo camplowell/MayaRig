@@ -3,7 +3,7 @@ from maya import cmds
 import maya.api.OpenMaya as om
 from typing import List, Tuple
 
-from . import naming, groups, attributes, nodes
+from . import naming, groups, attributes, nodes, selection, joints
 from .naming import Side, Suffix
 
 # Control curves
@@ -13,9 +13,13 @@ def circle(name:str, suffix:str, joint:str, parent:str, flipped:bool=False, * , 
     if flipped:
         slide = -slide
     radius *= attributes.get_control_size(joint)
-    ret = cmds.circle(n=name, nr = normal, cx = slide, r=radius)[0]
+    child =  cmds.listRelatives(joint, children=True)[0]
+    pos = om.MVector(cmds.joint(joint, q=True, p=True))
+    to_child = om.MVector(om.MVector(cmds.joint(child, q=True, p=True)) - pos)
+    
+    ret = cmds.circle(n=name, nr = normal, r=radius)[0]
 
-    return _match_joint(ret, joint, parent=parent)
+    return _match_joint(ret, joint, parent=parent, offset=slide * to_child)
 
 def ellipse(name:str, suffix:str, joint:str, parent:str, * , normal:Tuple[float, float, float]=(1, 0, 0), size:Tuple[float, float, float]=(4, 4, 4)):
     name = naming.replace(joint, name=name, suffix=suffix)
@@ -202,6 +206,21 @@ def finger_root(name:str, suffix:str, joint:str, parent:str, flipped=False, * , 
     return _match_joint(ret, joint, parent=parent)
 
 # Transformations --------------------------------------------------------------------------------
+
+def display_transform(controller, target, systems_group):
+    parent = joints.get_parent(controller)
+    offset_group = groups.empty_at(controller, name=naming.get_name(controller), suffix='displayOffset', parent=systems_group)
+    cmds.parentConstraint(controller, offset_group, mo=True)
+    prev_selection = selection.get()
+    selection.set_(controller)
+
+    cluster = cmds.cluster(n=naming.replace(controller, suffix='cluster'), bs=True, rel=True)[1]
+    cmds.parent(cluster, offset_group)
+    set_rest_pose(cluster)
+    cmds.parentConstraint(target, cluster, mo=True)
+
+    selection.set_(prev_selection)
+    
 
 def reset_transforms(obj: str):
     for attribute in ["translate", "rotate", "scale", "jointOrient"]:

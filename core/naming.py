@@ -27,7 +27,7 @@ class Suffix(str, Enum):
     IK_CONTROL = 'ikControl'
     FK_CONTROL = 'fkControl'
     IK_HANDLE = 'ikHandle'
-    IK_OFFSET = 'offset'
+    OFFSET = 'offset'
     TWEAK_CONTROL = 'tweakControl'
 
 # Attributes

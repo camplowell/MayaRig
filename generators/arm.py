@@ -139,7 +139,6 @@ def _create_markers(symmetrical_field, side_field, clavicle_field):
         cmds.delete(root)
         root = root_r
     joints.mark_root(root, name, is_symmetrical)
-    cmds.parent(root, naming.marker_grp)
     selection.set_(root)
 
 # Create controls --------------------------------------------------------------------------------
@@ -232,7 +231,7 @@ def _create_ik(driver_joints, control_grp, systems_grp, flipped, shoulder_loc):
     cmds.poleVectorConstraint(pole, handle)
 
 
-    hand_space = groups.empty_at(wrist, 'ikHand', parent=control_grp, suffix=Suffix.IK_OFFSET)
+    hand_space = groups.empty_at(wrist, 'ikHand', parent=control_grp, suffix=Suffix.OFFSET)
     cmds.parentConstraint(naming.root_control, hand_space, mo=True)
 
     wrist_ctrl = controls.square(

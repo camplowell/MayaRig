@@ -65,5 +65,3 @@ def _create_markers(symmetrical_field, side_field):
     joint = joints.marker(side, 'joint', (0, 0, 0))
     joints.mark_root(joint, name, cmds.checkBox(symmetrical_field, q=True, v=True))
     attributes.add_enum(joint, 'axis', 'X:Y:Z:', active=0, keyable=True)
-    if not joints.get_parent(joint):
-        cmds.parent(joint, naming.marker_grp)

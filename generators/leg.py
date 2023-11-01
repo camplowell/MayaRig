@@ -102,7 +102,7 @@ def _create_markers(symmetrical_field, side_field):
     marker(Side.LEFT, 'heel', (7, 0, -9), bind=False)
     selection.set_(ankle)
     marker(Side.LEFT, 'ballOfFoot', (7, 1.5, 8))
-    marker(side.LEFT, 'tipOfToe', (7, 0, 16))
+    marker(side.LEFT, 'tipOfToe', (7, 0, 16), bind=False)
     selection.set_(ankle)
     marker(side.LEFT, 'footBankInner', (4, 0, 9), bind=False)
     selection.set_(ankle)
@@ -113,7 +113,6 @@ def _create_markers(symmetrical_field, side_field):
         cmds.delete(hip)
         hip = hip_r
     joints.mark_root(hip, name, is_symmetrical)
-    cmds.parent(hip, naming.marker_grp)
 
     selection.set_(hip)
 
@@ -205,7 +204,7 @@ def _create_ik(driver_joints, reverse_foot_drivers, control_grp, systems_grp, fl
         parent=control_grp,
         flipped=flipped
     )
-    foot_offset = groups.new_at(foot_ctrl, name='ikFoot', suffix=Suffix.IK_OFFSET, parent=control_grp, contents=[foot_ctrl])
+    foot_offset = groups.new_at(foot_ctrl, name='ikFoot', suffix=Suffix.OFFSET, parent=control_grp, contents=[foot_ctrl])
     cmds.parentConstraint(naming.root_control, foot_offset, mo=True)
 
     attributes.add(foot_ctrl, 'rollBack', 0, type_='float', keyable=True)
