@@ -45,6 +45,11 @@ Re-orients all markers, and automatically places a pole vector control.
 ### Torso
 Creates a torso.
 Preserves the orientation of all torso markers (generally oriented to world)
+### Simple
+Only contains Center of Gravity and pelvis controls.
+### FK
+A four joint, three control FK torso rig with an inverted pelvis bone.
+The center control rotates automatically with the pelvis and shoulders, but can be tweaked if desired.
 
 ## Layers of the Rig
 
