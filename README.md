@@ -50,7 +50,6 @@ Only contains Center of Gravity and pelvis controls.
 ### FK
 A four joint, three control FK torso rig with an inverted pelvis bone.
 The center control rotates automatically with the pelvis and shoulders, but can be tweaked if desired.
-**NOTE:** Bind joints have not yet been implemented for the FK torso.
 
 ## Layers of the Rig
 
