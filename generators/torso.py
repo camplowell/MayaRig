@@ -30,17 +30,31 @@ def create_controllers(driver_joints:List[str]):
     style = attributes.get(cog_bone, 'style')
     pelvis_bone = joints.find('pelvis', driver_joints)
     cog_controller = controls.circle_with_arrows("centerOfGravity", suffix=Suffix.CONTROL, joint=cog_bone, parent=control_grp, radius=20)
-
+    attributes.lock(cog_controller, ['scale'])
     pelvis_controller = controls.saddle("hip", suffix=Suffix.CONTROL, joint=pelvis_bone, parent=cog_controller, radius=16)
-    cmds.parentConstraint(pelvis_controller, pelvis_bone)
-
+    attributes.lock(pelvis_controller, ['scale'])
     if (style == 0):
+        cmds.parentConstraint(pelvis_controller, pelvis_bone)
+        cmds.parent(joints.get_children(cog_bone), joints.get_parent(cog_bone))
+        cmds.delete(cog_bone)
         return
     if (style == 1):
         systems_grp = groups.systems_group(cog_bone, name)
+        joints.prune(cog_bone)
+
         spine0 = joints.find('spine0', driver_joints)
         spine1 = joints.find('spine1', driver_joints)
         spine2 = joints.find('spine2', driver_joints)
+        # Compact spine into a single continuous bone chain 
+        nib = joints.find('pelvisNib', driver_joints)
+        nib_pos = joints.get_position(nib)
+        print('Nib pos:', nib_pos)
+        cmds.parent(nib, w=True)
+        cmds.move(nib_pos.x, nib_pos.y, nib_pos.z, pelvis_bone, r=False)
+        cmds.delete(nib)
+        cmds.parent(spine0, pelvis_bone)
+        cmds.parentConstraint(pelvis_controller, pelvis_bone, mo=True)
+
         middleTorso_offset = groups.empty_at(spine0, 'middleTorso', suffix=Suffix.OFFSET, parent=cog_controller, offset=0.5 * joints.offset_to(spine0, spine1))
         middleTorso_fk = controls.circle(
             'middleTorso', suffix=Suffix.CONTROL, 
@@ -50,6 +64,7 @@ def create_controllers(driver_joints:List[str]):
             slide=0.5,
             parent=middleTorso_offset
         )
+        attributes.lock(middleTorso_fk, ['translate', 'scale'])
         shoulder_fk = controls.saddle(
             'upperTorso', suffix=Suffix.CONTROL,
             joint=spine2,
@@ -57,10 +72,11 @@ def create_controllers(driver_joints:List[str]):
             depth=-4,
             parent=cog_controller
         )
+        attributes.lock(shoulder_fk, ['translate', 'scale'])
+        
         cmds.orientConstraint(pelvis_controller, middleTorso_offset, w=attributes.get(spine0, 'weight_pelvis'))
         cmds.orientConstraint(shoulder_fk, middleTorso_offset, w=attributes.get(spine0, 'weight_shoulder'))
 
-        cmds.pointConstraint(pelvis_bone, spine0)
         cmds.orientConstraint(middleTorso_fk, spine0)
 
         cmds.orientConstraint(middleTorso_fk, spine1, w=attributes.get(spine1, 'weight_middle'))
@@ -73,16 +89,21 @@ def create_controllers(driver_joints:List[str]):
 
 def create_bind_joints(driver_joints:List[str]):
     """Generates bind joints driven by the driver joints."""
-    
-    bind_joints = joints.variants(driver_joints, suffix=Suffix.BIND_JOINT, parent_if_exists=True)
+    """bind_joints = joints.variants(
+        driver_joints, 
+        suffix=Suffix.BIND_JOINT, 
+        parent_if_exists=True, 
+        condition=joints.is_bind
+    )
     root_parent = joints.get_parent(bind_joints[0])
 
     if root_parent == naming.driver_grp:
         cmds.parent(bind_joints[0], naming.bind_grp)
     
-    for i in range(len(driver_joints)):
-        cmds.parentConstraint(driver_joints[i], bind_joints[i])
-        cmds.scaleConstraint(driver_joints[i], bind_joints[i])
+    for i in range(len(bind_joints)):
+        driver_joint = joints.find_equiv(bind_joints[i], driver_joints)
+        cmds.parentConstraint(driver_joint, bind_joints[i])
+        cmds.scaleConstraint(driver_joint, bind_joints[i])"""
 
 # IMPLEMENTATION =================================================================================
 
@@ -101,7 +122,7 @@ def _create_markers(type_field):
     if type_str == 'FK':
         attributes.add(center_of_gravity, 'style', 1, type_='float')
 
-        hip = joints.marker(Side.CENTER, 'pelvis', (0, 0, 0), type_="pelvis")
+        pelvis = joints.marker(Side.CENTER, 'pelvis', (0, 0, 0), type_="pelvis")
         joints.marker(Side.CENTER, 'pelvisNib', (0, -14, -4), type_="pelvisNib", bind=False)
         selection.set_(center_of_gravity)
 

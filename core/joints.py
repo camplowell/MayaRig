@@ -29,6 +29,9 @@ def get_chain(root: str) -> List[str]:
 def get_child(root:str) -> str:
     return cmds.listRelatives(root, type='joint')[0]
 
+def get_children(root:str) -> List[str]:
+    return cmds.listRelatives(root, type='joint')
+
 def variants(joints: List[str], suffix:str, * , parent_if_exists=False, clear_attributes=False, keep_root=False, root_parent = None) -> List[str]:
     """Creates a duplicate of the given joints, keeping internal parent/child relationships
     Does not recreate bones if they exist already.
@@ -47,17 +50,25 @@ def variants(joints: List[str], suffix:str, * , parent_if_exists=False, clear_at
         current_parent = get_parent(new_joint)
         if i == 0 and root_parent and current_parent != root_parent:
             cmds.parent(new_joint, root_parent)
-        elif parent_if_exists:
+        elif parent_if_exists or current_parent in joints:
             desired_parent = naming.replace(get_parent(joints[i]), suffix=suffix)
             if current_parent != desired_parent and exists(desired_parent):
                 cmds.parent(new_joint, desired_parent)
     return ret
+
+def prune(joint):
+    """Removes the joint from the hierarchy, transferring any children to its parent"""
+    cmds.parent(get_children(joint), get_parent(joint))
+    cmds.delete(joint)
 
 def get_parent(obj: str) -> str:
     parent_list = cmds.listRelatives(obj, p=True)
     if parent_list:
         return parent_list[0]
     return None
+
+def is_bind(obj:str):
+    return attributes.get(obj, BIND_ATTR)
 
 def is_root(obj: str) -> bool:
     """Returns if the given joint is the root of a limb"""
@@ -143,6 +154,7 @@ def _flip_joint_orientation(joint):
     cmds.parent(children, joint)
 
 def offset_to(joint, joint2=None) -> om.MVector:
+    """Get the offset to another joint (defaults to the first child)"""
     if not joint2:
         joint2 = get_child(joint)
     pos = om.MVector(cmds.joint(joint, q=True, p=True))

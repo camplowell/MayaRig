@@ -174,19 +174,19 @@ def circle_with_arrows(name:str, suffix:str, joint:str = None, parent:str = None
     else:
         return _to_pos(ret, offset, parent)
 
-def saddle(name:str, suffix:str, joint:str, parent:str, * , radius:float=8.0, depth:float=4.0, normal:Tuple[float, float, float]=(0, 1, 0)):
+def saddle(name:str, suffix:str, joint:str, parent:str, * , radius:float=8.0, depth:float=4.0, normal:Tuple[float, float, float]=(0, 1, 0), offset:Tuple[float, float, float] = (0, 0, 0)):
     name = naming.replace(joint, name=name, suffix=suffix)
     size = attributes.get_control_size(joint)
     radius *= size
     depth *= size
     ret = cmds.circle(n=name, nr = normal, r=radius)[0]
     normal = om.MVector(normal)
-    offset = om.MVector(normal) * depth
+    depth_offset = om.MVector(normal) * depth
 
-    cmds.move(offset.x, offset.y, offset.z, ret+".cv[3]", ret+".cv[7]", r=True)
-    cmds.move(-offset.x, -offset.y, -offset.z, ret+".cv[1]", ret+".cv[5]", r=True)
+    cmds.move(depth_offset.x, depth_offset.y, depth_offset.z, ret+".cv[3]", ret+".cv[7]", r=True)
+    cmds.move(-depth_offset.x, -depth_offset.y, -depth_offset.z, ret+".cv[1]", ret+".cv[5]", r=True)
 
-    return _match_joint(ret, joint, parent=parent)
+    return _match_joint(ret, joint, parent=parent, offset=offset)
 
 def finger_root(name:str, suffix:str, joint:str, parent:str, flipped=False, * , offset = 2.0, size = 1.0):
     name=naming.replace(joint, name=name, suffix=suffix)
