@@ -48,9 +48,16 @@ def create_controllers(driver_joints:List[str]):
         # Compact spine into a single continuous bone chain 
         nib = joints.find('pelvisNib', driver_joints)
         nib_pos = joints.get_position(nib)
-        print('Nib pos:', nib_pos)
         cmds.parent(nib, w=True)
+        pelvis_children = joints.get_children(pelvis_bone)
+        if (pelvis_children):
+            cmds.parent(pelvis_children, w=True)
         cmds.move(nib_pos.x, nib_pos.y, nib_pos.z, pelvis_bone, r=False)
+        if (pelvis_children):
+            cmds.parent(pelvis_children, pelvis_bone)
+        nib_children = joints.get_children(nib)
+        if (nib_children):
+            cmds.parent(nib_children, pelvis_bone)
         cmds.delete(nib)
         cmds.parent(spine0, pelvis_bone)
         cmds.parentConstraint(pelvis_controller, pelvis_bone, mo=True)
@@ -61,7 +68,7 @@ def create_controllers(driver_joints:List[str]):
             joint=spine0,
             radius=16,
             normal=(0, 1, 0),
-            slide=0.5,
+            offset=0.5 * joints.offset_to(spine0),
             parent=middleTorso_offset
         )
         attributes.lock(middleTorso_fk, ['translate', 'scale'])

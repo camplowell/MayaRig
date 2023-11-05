@@ -8,18 +8,13 @@ from .naming import Side, Suffix
 
 # Control curves
 
-def circle(name:str, suffix:str, joint:str, parent:str, flipped:bool=False, * , radius:float=4, slide:float=0, normal:Tuple[float, float, float]=(1, 0, 0)):
+def circle(name:str, suffix:str, joint:str, parent:str, flipped:bool=False, * , radius:float=4, normal:Tuple[float, float, float]=(1, 0, 0), offset:Tuple[float, float, float] = (0, 0, 0)):
     name = naming.replace(joint, name=name, suffix=suffix)
-    if flipped:
-        slide = -slide
     radius *= attributes.get_control_size(joint)
-    child =  cmds.listRelatives(joint, children=True)[0]
-    pos = om.MVector(cmds.joint(joint, q=True, p=True))
-    to_child = om.MVector(om.MVector(cmds.joint(child, q=True, p=True)) - pos)
     
     ret = cmds.circle(n=name, nr = normal, r=radius)[0]
 
-    return _match_joint(ret, joint, parent=parent, offset=slide * to_child)
+    return _match_joint(ret, joint, parent=parent, offset=offset)
 
 def ellipse(name:str, suffix:str, joint:str, parent:str, * , normal:Tuple[float, float, float]=(1, 0, 0), size:Tuple[float, float, float]=(4, 4, 4)):
     name = naming.replace(joint, name=name, suffix=suffix)
