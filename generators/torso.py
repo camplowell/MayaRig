@@ -29,9 +29,8 @@ def create_controllers(driver_joints:List[str]):
     
     style = attributes.get(cog_bone, 'style')
     pelvis_bone = joints.find('pelvis', driver_joints)
-    cog_controller = controls.circle_with_arrows("centerOfGravity", suffix=Suffix.CONTROL, joint=cog_bone, parent=control_grp, radius=20)
-    attributes.lock(cog_controller, ['scale'])
-    pelvis_controller = controls.saddle("hip", suffix=Suffix.CONTROL, joint=pelvis_bone, parent=cog_controller, radius=16)
+    attributes.lock(naming.cog_control, ['scale'])
+    pelvis_controller = controls.saddle("hip", suffix=Suffix.CONTROL, joint=pelvis_bone, parent=naming.cog_control, radius=16)
     attributes.lock(pelvis_controller, ['scale'])
     if (style == 0):
         cmds.parentConstraint(pelvis_controller, pelvis_bone)
@@ -62,7 +61,7 @@ def create_controllers(driver_joints:List[str]):
         cmds.parent(spine0, pelvis_bone)
         cmds.parentConstraint(pelvis_controller, pelvis_bone, mo=True)
 
-        middleTorso_offset = groups.empty_at(spine0, 'middleTorso', suffix=Suffix.OFFSET, parent=cog_controller, offset=0.5 * joints.offset_to(spine0, spine1))
+        middleTorso_offset = groups.empty_at(spine0, 'middleTorso', suffix=Suffix.OFFSET, parent=naming.cog_control, offset=0.5 * joints.offset_to(spine0, spine1))
         middleTorso_fk = controls.circle(
             'middleTorso', suffix=Suffix.CONTROL, 
             joint=spine0,
@@ -77,7 +76,7 @@ def create_controllers(driver_joints:List[str]):
             joint=spine2,
             radius=16,
             depth=-4,
-            parent=cog_controller
+            parent=naming.cog_control
         )
         attributes.lock(shoulder_fk, ['translate', 'scale'])
         
