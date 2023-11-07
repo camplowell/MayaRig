@@ -29,6 +29,7 @@ class Suffix(str, Enum):
     IK_HANDLE = 'ikHandle'
     OFFSET = 'offset'
     TWEAK_CONTROL = 'tweakControl'
+    SPACE_SWITCH = 'spaceSwitch'
 
 # Attributes
 SYMMETRICAL_ATTR = 'symmetrical'
@@ -50,6 +51,7 @@ control_grp = None
 no_touch_grp = None
 
 root_control = None
+cog_control = None
 
 def set_active_character(name: str, initials: str):
     global _initials, _name
