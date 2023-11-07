@@ -27,11 +27,14 @@ def set_(obj: str, attr: str, value, type_: str=None, lock:bool=False, keyable:b
         else:
             return cmds.setAttr(attr_path(obj, attr), value, l=lock, k=keyable, cb=channelBox)
     
-def add(obj: str, attr: str, value, type_:str, lock:bool=False, hidden:bool=False, keyable:bool=False, * , niceName:str=None):
-    if type_ in DATA_TYPES:
-        cmds.addAttr(obj, ln=attr, dt=type_, h=hidden)
+def add(obj: str, attr: str, value, type_:str, lock:bool=False, hidden:bool=False, keyable:bool=False, * , niceName:str=None, enumName:List[str]=None):
+    if type_ == 'enum':
+        enumName = ':'.join(enumName)
+        cmds.addAttr(obj, ln=attr, dt=type_, h=hidden, en=enumName, dv=value)
+    elif type_ in DATA_TYPES:
+        cmds.addAttr(obj, ln=attr, dt=type_, h=hidden, dv=value)
     else:
-        cmds.addAttr(obj, ln=attr, at=type_, h=hidden)
+        cmds.addAttr(obj, ln=attr, at=type_, h=hidden, dv=value)
         
     if niceName:
         cmds.addAttr(attr_path(obj, attr), e=True, nn=niceName)
@@ -44,7 +47,7 @@ def set_or_add(obj:str, attr:str, value, type_:str):
         add(obj, attr, value, type_)
 
 def add_enum(obj:str, attr:str, values, active:int, hidden:bool=False, keyable=False, niceName:str=None):
-    cmds.addAttr(obj, ln=attr, at='enum', en=values, h=hidden)
+    cmds.addAttr(obj, ln=attr, at='enum', en=':'.join(values), h=hidden)
     if niceName:
         cmds.addAttr(attr_path(obj, attr), e=True, nn=niceName)
     set_(obj, attr, active, keyable=keyable)
