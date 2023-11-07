@@ -1,7 +1,8 @@
 from maya import cmds
 from typing import Tuple, List
-from .naming import Side, Suffix, exists, replace
-from . import naming, joints
+from .naming import Suffix, exists, replace
+from . import naming, joints, attributes
+import maya.api.OpenMaya as om
 
 def recreate(contents: List[str] = [], n:str = '') -> str:
     if not n:
@@ -50,7 +51,7 @@ def new_at(obj: str, name: str, parent=None, * , suffix=Suffix.GROUP, offset:Tup
 
     return grp
 
-def empty_at(obj: str, name: str, parent=None, * , suffix=Suffix.GROUP, offset:Tuple[float, float, float] = (0, 0, 0)) -> str:
+def empty_at(obj: str, name: str, parent=None, * , suffix=Suffix.GROUP, offset:Tuple[float, float, float] = (0, 0, 0), realize_offset_parent=False) -> str:
     n = replace(obj, name=name, suffix=suffix)
     if exists(n):
         raise Exception("Object already exists: " + n)
@@ -60,15 +61,19 @@ def empty_at(obj: str, name: str, parent=None, * , suffix=Suffix.GROUP, offset:T
         cmds.parent(grp, parent)
         cmds.makeIdentity(grp, a=False, t=True, r=True, s=True)
     match_pivots(obj, grp)
+    if realize_offset_parent:
+        cmds.xform(grp, r=True, m=om.MMatrix(attributes.get(obj, 'offsetParentMatrix')).inverse())
     cmds.move(offset[0], offset[1], offset[2], grp, r=True)
     cmds.makeIdentity(grp, a=True, t=True)
+    if realize_offset_parent:
+        cmds.xform(grp, r=True, m=attributes.get(obj, 'offsetParentMatrix'))
     return grp
 
 def match_pivots(src: str, dest: str):
     pivot = cmds.xform(src, q=True, ws=True, piv=True)
     cmds.xform(dest, ws=True, piv=(pivot[0], pivot[1], pivot[2]))
 
-def create_control_group(root:str, name:str) -> str:
+def create_control_group(root:str, name:str, override_rot:str = None) -> str:
     control_grp = empty_at(root, name, parent=naming.root_control)
     driver_parent = joints.get_parent(root)
     if driver_parent != naming.driver_grp:
