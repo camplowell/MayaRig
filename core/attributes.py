@@ -1,5 +1,6 @@
 from typing import Any, List
 from maya import cmds
+import maya.api.OpenMaya as om
 from .naming import attr_path, exists
 
 DATA_TYPES = ['string', 'stringArray', 'matrix', 'reflectanceRGB', 'spectrumRGB', 'doubleArray', 'floatArray', 'Int32Array', 'vectorArray', 'nurbsCurve', 'nurbsSurface', 'mesh', 'lattice', 'pointArray']
@@ -16,12 +17,14 @@ def set_(obj: str, attr: str, value, type_: str=None, lock:bool=False, keyable:b
         type_='string'
     if type_ in ['bool', 'short', 'long', 'float', 'double', 'int', 'float']:
         type_=None
-    if isinstance(value, tuple):
+    if hasattr(value, '__iter__') or isinstance(value, om.MVector) and not isinstance(value, str):
+        print('Passed iterable')
         if type_:
             return cmds.setAttr(attr_path(obj, attr), *value, type=type_, l=lock, k=keyable, cb=channelBox)
         else:
             return cmds.setAttr(attr_path(obj, attr), *value, l=lock, k=keyable, cb=channelBox)
     else:
+        print('Passed non-iterable')
         if type_:
             return cmds.setAttr(attr_path(obj, attr), value, type=type_, l=lock, k=keyable, cb=channelBox)
         else:
