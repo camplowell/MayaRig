@@ -37,6 +37,7 @@ def create_controllers(driver_joints:List[str]):
 
     clavicle = joints.find('clavicle', driver_joints)
     shoulder_loc = None
+    arm_space = groups.empty_at(joints.find('shoulder', driver_joints), name, suffix=Suffix.SPACE_SWITCH, parent=control_grp)
     if clavicle:
         clavicle_parent = joints.get_parent(clavicle)
         clavicle_offset = groups.empty_at(clavicle, 'clavicleOffset', parent=clavicle_parent)
@@ -56,13 +57,14 @@ def create_controllers(driver_joints:List[str]):
         cmds.parentConstraint(clavicle_curve, clavicle, mo=True)
 
         shoulder = joints.find('shoulder', driver_joints)
-        shoulder_loc = groups.empty_at(shoulder, "shoulder_location", parent=systems_grp)
+        shoulder_loc = groups.empty_at(shoulder, "shoulderLoc", parent=systems_grp)
         cmds.parentConstraint(clavicle, shoulder_loc, mo=True)
-
+        cmds.parent(arm_space, clavicle_curve)
+    
     fk = _create_fk(driver_joints, control_grp, systems_grp, flipped, shoulder_loc=shoulder_loc)
     ik = _create_ik(driver_joints, control_grp, systems_grp, flipped, shoulder_loc=shoulder_loc)
 
-    _ik_switch(driver_joints, fk, ik, control_grp, flipped)
+    _ik_switch(driver_joints, fk, ik, control_grp, flipped, arm_space)
 
     _create_hand(driver_joints, control_grp, flipped)
 
@@ -173,10 +175,18 @@ def _create_fk(driver_joints, control_grp, systems_grp, flipped, shoulder_loc):
         flipped = flipped,
         radius=6
     )
-    attributes.connect(shoulder_ctrl, 'rotate', shoulder)
-    attributes.connect(shoulder_ctrl, 'scale', shoulder)
-    #attributes.lock(shoulder_ctrl, ['translate'])
-    cmds.pointConstraint(shoulder_loc, shoulder_ctrl)
+    controls.space_switch(
+        shoulder_ctrl,
+        [(naming.cog_control, 'CoG'), (naming.root_control, 'Layout')], 
+        systems_group=systems_grp,
+        parent_space_name='Body',
+        rotation_only=True
+    )
+    cmds.orientConstraint(shoulder_ctrl, shoulder)
+    if shoulder_loc:
+        cmds.pointConstraint(shoulder_loc, shoulder_ctrl)
+    else:
+        attributes.lock(shoulder_ctrl, 'translation')
 
     elbow = joints.find('elbow', fk)
     elbow_ctrl = controls.circle(
@@ -210,13 +220,12 @@ def _create_ik(driver_joints, control_grp, systems_grp, flipped, shoulder_loc):
         joints.find('wrist', driver_joints)
     ]
     ik = joints.variants(driver_joints, Suffix.IK_JOINT, root_parent=systems_grp)
-    
 
     shoulder = naming.find('shoulder', ik)
     elbow = naming.find('elbow', ik)
     wrist = naming.find('wrist', ik)
-
-    cmds.pointConstraint(shoulder_loc, shoulder)
+    if shoulder_loc:
+        cmds.pointConstraint(shoulder_loc, shoulder)
 
     handle = naming.replace(wrist, name=name, suffix=Suffix.IK_HANDLE)
     cmds.ikHandle(n=handle, sj=shoulder, ee=wrist, solver='ikRPsolver')
@@ -230,27 +239,29 @@ def _create_ik(driver_joints, control_grp, systems_grp, flipped, shoulder_loc):
     )
     cmds.poleVectorConstraint(pole, handle)
 
-
-    hand_space = groups.empty_at(wrist, 'ikHand', parent=control_grp, suffix=Suffix.OFFSET)
-    cmds.parentConstraint(naming.root_control, hand_space, mo=True)
-
     wrist_ctrl = controls.square(
         'hand', Suffix.IK_CONTROL,
         wrist,
-        parent=hand_space
+        parent=control_grp
     )
     
     if naming.get_side(wrist_ctrl) == Side.RIGHT:
         cmds.rotate(0, 180, 180, wrist_ctrl)
         controls.set_rest_pose(wrist_ctrl)
 
+    controls.space_switch(
+        wrist_ctrl,
+        [(naming.cog_control, 'CoG'), (naming.root_control, 'Layout')], 
+        systems_group=systems_grp,
+        parent_space_name='Body'
+    )
     cmds.pointConstraint(wrist_ctrl, handle)
     cmds.orientConstraint(wrist_ctrl, wrist, mo=True)
 
     attributes.delete_all(ik)
     return ik
 
-def _ik_switch(driver_joints, fk, ik, control_grp, flipped):
+def _ik_switch(driver_joints, fk, ik, control_grp, arm_space, flipped):
     wrist = naming.find('wrist', driver_joints)
     switch, invert = controls.ik_switch(
         name,
@@ -259,7 +270,6 @@ def _ik_switch(driver_joints, fk, ik, control_grp, flipped):
         parent = control_grp,
         flipped = flipped
     )
-    cmds.parentConstraint(wrist, switch, mo=True)
 
     for i in range(len(fk)):
         fk_joint = fk[i]
