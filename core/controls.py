@@ -234,6 +234,82 @@ def set_rest_pose(obj: str):
     reset_transforms(obj)
     return obj
 
+def space_switch(
+    target: str,
+    spaces_and_names: List[Tuple[str, str]],
+    systems_group: str,
+    *,
+    controller: str = None,
+    default: str = 0,
+    parent_space_name: str = "default",
+    attribute_name: str = 'space',
+    include_real_parent=True,
+    rotation_only=False
+):
+    """Create a space switch for the given target.
+
+    Args:
+    target (str): the object to switch spaces
+    controller (str): the object to place the switch parameter
+    spaces_and_names: a list containing (space_object, space_name) pairs
+    systems_group (str): the group to place any generated intermediary objects
+    default (int): the index of the default space
+    include_real_parent (bool): Include the actual parent space?
+    """
+    if not controller:
+        controller = target
+    space_names = [parent_space_name] if include_real_parent else []
+    for _, space_name in spaces_and_names:
+        space_names.append(space_name)
+    attributes.add_enum(controller, attribute_name, space_names, active=default, keyable=True)
+    target_parent = joints.get_parent(target)
+    local_system_parent = groups.empty_at(target_parent, name=naming.get_name(target), suffix='space_switch_base', parent=systems_group)
+    nodes.matrixParent(target_parent, local_system_parent)
+
+    space_blend = nodes.blendMatrix(naming.replace(target, suffix='space_blend'))
+    target_offsetParent = om.MMatrix(attributes.get(target, 'offsetParentMatrix'))
+    attributes.set_(space_blend, 'inputMatrix', target_offsetParent, type_='matrix')
+    if not include_real_parent:
+        space_object, space_name = spaces_and_names.pop(0)
+        offset_mat = nodes.matMult(naming.replace(
+            target,
+            name="{0}_2_{1}".format(naming.get_name(target), space_name),
+            suffix='matMult'
+        ))
+        attributes.set_(offset_mat, 'matrixIn[0]', target_offsetParent, type_='matrix')
+        attributes.connect(space_object, 'worldMatrix[0]', offset_mat, 'matrixIn[1]')
+        attributes.connect(target_parent, 'worldInverseMatrix[0]', offset_mat, 'matrixIn[2]')
+    
+    envelope_condition = nodes.condition(naming.replace(target, suffix='space_condition'))
+    print('Base condition name:', envelope_condition)
+    attributes.set_(envelope_condition, 'operation', 2) # greater than
+    attributes.set_(envelope_condition, 'secondTerm', 0)
+    attributes.connect(controller, attribute_name, envelope_condition, 'firstTerm')
+    attributes.connect(envelope_condition, 'outColorR', space_blend, 'envelope')
+
+    for i, (space_object, space_name) in enumerate(spaces_and_names):
+        offset_mat = nodes.matrixParent(space_object, target, connect=False)
+
+        local_switch = nodes.condition(naming.replace(offset_mat, suffix='condition'))
+        attributes.set_(local_switch, 'secondTerm', i + 1)
+        attributes.connect(controller, attribute_name, local_switch,'firstTerm')
+        
+        attributes.connect(offset_mat, 'matrixSum', space_blend, 'target[{}].targetMatrix'.format(i))
+        attributes.connect(local_switch, 'outColorR', space_blend, 'target[{}].weight'.format(i))
+
+    if rotation_only:
+        decomposed = nodes.decomposeMatrix(naming.replace(space_blend, suffix='decompose_parent'))
+        attributes.connect(space_blend, 'outputMatrix', decomposed, 'inputMatrix')
+        masked = nodes.composeMatrix(naming.replace(decomposed, suffix='mask_parent'))
+        target_offsetParent_transform = om.MTransformationMatrix(target_offsetParent)
+        attributes.connect(decomposed, 'outputRotate', masked, 'inputRotate')
+        attributes.set_(masked, 'inputTranslate', target_offsetParent_transform.translation(om.MSpace.kObject), type_='double3')
+        attributes.set_(masked, 'inputScale', target_offsetParent_transform.scale(om.MSpace.kObject), type_='double3')
+        attributes.connect(masked, 'outputMatrix', target, 'offsetParentMatrix')
+    else:
+        attributes.connect(space_blend, 'outputMatrix', target, 'offsetParentMatrix')
+    
+
 # Helper methods ---------------------------------------------------------------------------------
 
 def _match_joint(control: str, joint: str, * , offset = (0, 0, 0), parent: str):
