@@ -26,8 +26,6 @@ def _generate_rig():
     roots = [joint for joint in pose_joints if joint.is_root()]
     roots.reverse()
     for root in roots:
-        cmds.reorder(root, b=True)
-    for root in roots:
         chain = root.chain()
         Limb.generators()[chain[0].generator()].buildRig(chain)
 
