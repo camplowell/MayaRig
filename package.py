@@ -1,4 +1,6 @@
 import os
+from maya import cmds
+from maya.api import OpenMaya as om
 
 from .ui.shelf import Shelf
 from .core.context import Character
@@ -19,16 +21,20 @@ class RigShelf(Shelf):
         self.addButton(label='Build', command=package_command('build()'), icon='button_build.png')
         self.addButton(label='Bind', command=package_command('bind()'), icon='button_joint.png')
         self.addSeparator()
-        torso_menu = self.addMenuButton('Torso', icon='button_torso.png')
+        torso_menu = self.addMenuButton('Torso', icon='button_torso.png', command=package_prepare())
         self.addMenuItem(torso_menu, 'FK Torso', package_limb(torso.Forward))
         self.addMenuItem(torso_menu, 'Simple Torso', package_limb(torso.Simple))
-        legs_menu = self.addMenuButton('Legs')
+        legs_menu = self.addMenuButton('Legs', command=package_prepare())
         self.addMenuItem(legs_menu, 'Humanoid', package_limb(legs.HumanoidLeg))
-        arm_menu = self.addMenuButton('Arms')
+        arm_menu = self.addMenuButton('Arms', command=package_prepare())
         self.addMenuItem(arm_menu, 'Humanoid', package_limb(arms.HumanoidArm))
 
-def prepare():
+def prepare(info=False):
     Character.initialize()
+    cmds.evalDeferred(lambda: RigShelf())
+    if info:
+        om.MGlobal.displayInfo('Loaded MayaRig menus')
+
 
 def package_command(command:str):
     """Outputs a Python script that runs a given function in commands.py"""
@@ -45,7 +51,7 @@ def package_prepare():
     """Outputs a Python script that initializes the character"""
     return '''
 import {package}
-{package}.package.prepare()
+{package}.package.prepare(True)
 '''.format(
         package = _PACKAGE_NAME,
     )

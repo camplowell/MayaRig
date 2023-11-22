@@ -32,10 +32,13 @@ class Shelf:
         if not icon:
             icon = self.defaultIcon
         icon = self.iconPath + icon
-        cmds.shelfButton(width=37, height=37, image=icon, l=label, command=command, dcc=doubleCommand, imageOverlayLabel=label, olb=self.labelBackground, olc=self.labelColour)
+        cmds.shelfButton(image=icon, l=label, command=command, dcc=doubleCommand, imageOverlayLabel=label, olb=self.labelBackground, olc=self.labelColour, fwt=1)
 
     def addMenuButton(self, label, icon:str=None, command=''):
-        """Adds a shelf button that opens a popup menu when clicked. Returns the created menu."""
+        """Adds a shelf button that opens a popup menu when clicked. Returns the created menu.
+        
+        The command will only be run if the menu hasn't been re-initialized since restarting Maya.
+        """
         self.addButton(label, icon, command=command)
         return cmds.popupMenu(b=1)
 
