@@ -92,7 +92,8 @@ class Forward(Limb):
     def _generate_bind_joints(self, pose_joints: JointCollection):
         to_bind = ['Pelvis', 'Spine0', 'Spine1', 'Spine2']
         bind_joints = Joint.variants([pose_joints[joint] for joint in to_bind], suffix=Suffix.BIND_JOINT)
-        
+        for joint in bind_joints:
+            joint.unlockAttrs(['translate', 'rotate', 'scale'])
         if pose_joints['Pelvis'].parent() == Character.pose_grp:
             cmds.parent(bind_joints['Pelvis'], Character.bind_grp)
         
@@ -115,7 +116,7 @@ class Forward(Limb):
         pelvis = pose_index['Pelvis']
         pelvis_nib = pose_index.pop('PelvisNib')
         spine0 = pose_index['Spine0']
-        spine0.translate_.unlock()
+        spine0.unlockAttrs(['translate'])
 
         cmds.parent(pelvis, cog_bone.parent())
         cog_children = cog_bone.children()

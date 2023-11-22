@@ -363,6 +363,14 @@ class MayaObject(str):
                 self.attr(attr + 'Z').lock()
             else:
                 self.attr(attr).lock()
+    
+    def unlockAttrs(self, attrs):
+        for attr in attrs:
+            if attr in ['translate', 'rotate', 'scale']:
+                self.attr(attr + 'X').unlock()
+                self.attr(attr + 'Y').unlock()
+                self.attr(attr + 'Z').unlock()
+            self.attr(attr).unlock()
 
     def clear_attributes(self, * , keep:List[str]=[]):
         for attr in cmds.listAttr(self, ud=True) or []:
