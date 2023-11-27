@@ -486,7 +486,10 @@ class MayaAttribute(str):
         if isinstance(value, int) or isinstance(value, float):
             pass
         elif isinstance(value, str):
-            kwargs['typ'] = 'string'
+            if self.type() == 'enum':
+                value = self.enum_values().index(value)
+            else:
+                kwargs['typ'] = 'string'
         elif isinstance(value, om.MVector) or isinstance(value, tuple) and len(value) == 3:
             kwargs['typ'] = 'float3'
         elif isinstance(value, om.MMatrix):
@@ -503,6 +506,12 @@ class MayaAttribute(str):
         else:
             return cmds.setAttr(self, value, **kwargs)
     
+    def set_or_connect(self, value):
+        if isinstance(value, MayaAttribute):
+            value >> self
+        else:
+            self.set(value)
+
     def increment(self, value):
         return self.set(self.get() + value)
     
@@ -532,6 +541,9 @@ class MayaAttribute(str):
         self._assert_exists()
         self.unlock()
         cmds.deleteAttr(self)
+
+    def enum_values(self) -> List[str]:
+        return cmds.attributeQuery(self, le=True)
     
     def __getitem__(self, key):
         return type(self)(self._obj, "{}[{}]".format(self._attr, key))
@@ -552,9 +564,6 @@ class MayaAttribute(str):
             raise AttributeError('No such attribute: {}'.format(name))
         attr = self.child(name)
         return attr
-        # if attr.exists():
-        #     return attr
-        # raise AttributeError('No such attribute: {}'.format(name))
     
     def __setattr__(self, name:str, value):
         if not (name.startswith('_') or hasattr(self, '_reserving')):
