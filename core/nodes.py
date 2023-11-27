@@ -382,7 +382,7 @@ class Nodes:
         side = side if side else owner.side
         initials = owner.initial if owner else None
         ret = EulerToQuatNode.compose(side, name, suffix, initials=initials).resolve_collisions()
-        cmds.shadingNode('eulerToQuat', n=ret, au=True)
+        cmds.shadingNode('quatToEuler', n=ret, au=True)
         return ret
     
     @classmethod
