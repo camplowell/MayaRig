@@ -543,7 +543,8 @@ class MayaAttribute(str):
         cmds.deleteAttr(self)
 
     def enum_values(self) -> List[str]:
-        return cmds.attributeQuery(self, le=True)
+        ret = cmds.attributeQuery(self._attr, node=self._obj, le=True)[0].split(':')
+        return ret
     
     def __getitem__(self, key):
         return type(self)(self._obj, "{}[{}]".format(self._attr, key))
