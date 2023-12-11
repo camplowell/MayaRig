@@ -191,13 +191,15 @@ class HumanoidArm(Limb):
         ik_wrist = controls.square(
             pose['Wrist'],
             'Hand', suffix=Suffix.IK_CONTROL,
-            parent=self.control_group
+            parent=self.control_group,
+            position=pose['Wrist'].position(),
+            relative=False
         )
         ik_wrist.rotateOrder.set(MayaObject.ROTATE_ORDER['yzx'])
         ik_switch.attr('ik') >> ik_wrist.visibility
         Nodes.Structures.spaceSwitch([Character.cog_control, Character.layout_control], ik_wrist, options=['Shoulders', 'CoG', 'Layout'], defaultValue=1)
         Nodes.Structures.parentConstraint(ik_wrist, handle)
-        cmds.orientConstraint(ik_wrist, ik['Wrist'])
+        cmds.orientConstraint(ik_wrist, ik['Wrist'], mo=True)
         return ik
     
     def _ik_switch(self, pose:JointCollection, fk:JointCollection, ik:JointCollection, switch:MayaObject):
