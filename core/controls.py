@@ -125,7 +125,7 @@ def pointer(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, tangent:Tup
     combine_curves([circle, line], ctrl)
     return place_ctrl(ctrl, ref, parent=parent)
 
-def fkIkSwitch(ref:Joint, name:str, parent:MayaObject, * , position:Tuple[float, float, float], relative=True, suffix:str=Suffix.SWITCH_CONTROL, onCollision=CollisionBehavior.INCREMENT, size:float=None, default=0, inherit_transform=True):
+def fkIkSwitch(ref:Joint, name:str, parent:MayaObject, * , position:Tuple[float, float, float], relative=True, suffix:str=Suffix.SWITCH_CONTROL, onCollision=CollisionBehavior.INCREMENT, size:float=None, default=0):
     ctrl = MayaObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
     if not size:
         size = ref.control_size()
@@ -151,17 +151,17 @@ def fkIkSwitch(ref:Joint, name:str, parent:MayaObject, * , position:Tuple[float,
     for curve in ik_curves:
         ctrl.attr('ik') >> curve.attr('visibility')
 
-    return place_ctrl(ctrl, ref, parent=parent, position=position, relative=relative)
+    return place_ctrl(ctrl, ref, parent=parent, position=position, relative=relative, rotate=False)
 
-def place_ctrl(ctrl:MayaObject, ref:Joint, parent:MayaObject=None, position:Tuple[float, float, float] = (0, 0, 0), relative=True, inherit_transforms=True):
+def place_ctrl(ctrl:MayaObject, ref:Joint, parent:MayaObject=None, position:Tuple[float, float, float] = (0, 0, 0), relative=True, inherit_transforms=True, * , rotate=True):
     """Places a control (assumed to be at the origin) and sets its rest position."""
     if relative:
         if position[0] or position[1] or position[2]:
-            localPos:om.MVector = om.MVector(position).transformAsNormal(ref.worldInverseMatrix.get()) * om.MVector(position).length()
+            localPos:om.MVector = om.MVector(position).transformAsNormal(ref.worldInverseMatrix.get()) * om.MVector(position).length() if rotate else position
             cmds.move(*localPos, ctrl, r=False)
             cmds.move(0, 0, 0, ctrl.attr('rotatePivot'), ctrl.attr('scalePivot'), r=False)
             cmds.makeIdentity(ctrl, a=True, t=True)
-        cmds.matchTransform(ctrl, ref)
+        cmds.matchTransform(ctrl, ref, pos=True, scl=True, rot=rotate)
     else:
         cmds.move(*position, ctrl, ws=True, r=False)
     
