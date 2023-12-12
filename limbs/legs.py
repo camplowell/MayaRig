@@ -194,11 +194,6 @@ class HumanoidLeg(Limb):
         foot_ctrl.addAttr('toeFlex', value=30, min=0, max=100, type_='float')
         foot_ctrl.addAttr('toeTap', value=0, min=-90, max=90, type_='float')
 
-
-        #foot_ctrl.addAttr('rollBackward', value=0, min=0, max=90, type_='float')
-        #foot_ctrl.addAttr('rollForward', value=0, min=0, max=180, type_='float')
-
-
         rollBack_invert = Nodes.min(owner=foot_ctrl, suffix='rollBack')
         rollBack_invert.floatA.set(0)
         foot_ctrl.attr('roll') >> rollBack_invert.floatB
