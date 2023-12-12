@@ -153,6 +153,8 @@ class Simple(Limb):
 
         Joint.marker(Side.CENTER, 'Pelvis', (0, 0, 0), size=10)
 
+        selection.set(cog)
+
     def _generate_controls(self, pose_joints: JointCollection):
         Nodes.Structures.parentConstraint(Character.cog_control, self.control_group)
 
