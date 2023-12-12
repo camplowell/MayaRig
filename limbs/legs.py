@@ -190,15 +190,19 @@ class HumanoidLeg(Limb):
         cmds.parent(handle, flex_piv)
 
         foot_ctrl.addAttr('bank', value=0, min=-90, max=90, type_='float')
-        foot_ctrl.addAttr('rollBackward', value=0, min=0, max=90, type_='float')
-        foot_ctrl.addAttr('rollForward', value=0, min=0, max=180, type_='float')
+        foot_ctrl.addAttr('roll', value=0, min=-90, max=180, type_='float')
         foot_ctrl.addAttr('toeFlex', value=30, min=0, max=100, type_='float')
         foot_ctrl.addAttr('toeTap', value=0, min=-90, max=90, type_='float')
 
-        rollBack_invert = Nodes.subtract(owner=foot_ctrl, name='FootRollBack', suffix='invert')
-        rollBack_invert.input1D[0].set(0)
-        foot_ctrl.attr('rollBackward') >> rollBack_invert.input1D[1]
-        rollBack_invert.output1D >> heel_piv.attr('rotateX')
+
+        #foot_ctrl.addAttr('rollBackward', value=0, min=0, max=90, type_='float')
+        #foot_ctrl.addAttr('rollForward', value=0, min=0, max=180, type_='float')
+
+
+        rollBack_invert = Nodes.min(owner=foot_ctrl, suffix='rollBack')
+        rollBack_invert.floatA.set(0)
+        foot_ctrl.attr('roll') >> rollBack_invert.floatB
+        rollBack_invert.outFloat >> heel_piv.attr('rotateX')
 
         bank_selector = Nodes.switch(owner=foot_ctrl, name='FootBank')
         foot_ctrl.attr('bank') >> bank_selector.firstTerm
@@ -217,11 +221,14 @@ class HumanoidLeg(Limb):
         # Calculate the preroll of the foot
         preroll = Nodes.min(owner=ball_floor_piv, suffix='preroll')
         preroll.floatA.set(90 - math.degrees(math.acos(ball_floor_piv.offset_to(pose['TipOfToe']).normal().y)))
-        foot_ctrl.attr('rollForward') >> preroll.floatB
+        rollForward = Nodes.max(owner=foot_ctrl, suffix='rollForward')
+        rollForward.floatA.set(0)
+        foot_ctrl.attr('roll') >> rollForward.floatB
+        rollForward.outFloat >> preroll.floatB
         
         # Calculate the flex of the foot
         desired_flex = Nodes.subtract(owner=foot_ctrl, suffix='desiredFlex')
-        foot_ctrl.attr('rollForward') >> desired_flex.input1D[0]
+        rollForward.outFloat >> desired_flex.input1D[0]
         preroll.outFloat >> desired_flex.input1D[1]
 
         flex = Nodes.min(owner=foot_ctrl, suffix='flex')
@@ -230,7 +237,7 @@ class HumanoidLeg(Limb):
 
         # Calculate the overflow to rotate at the toe tip
         overflow = Nodes.subtract(owner=foot_ctrl, suffix='overflow')
-        foot_ctrl.attr('rollForward') >> overflow.input1D[0]
+        rollForward.outFloat >> overflow.input1D[0]
         preroll.outFloat >> overflow.input1D[1]
         flex.outFloat >> overflow.input1D[2]
 
