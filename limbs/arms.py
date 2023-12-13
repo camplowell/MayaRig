@@ -104,8 +104,8 @@ class HumanoidArm(Limb):
         for knuckle in pose_joints['Knuckle']:
             fingerJoints = [Joint(joint) for joint in knuckle.descendants(type_='joint')]
             fingerJoints.reverse()
-            if 'Thumb' in knuckle: # Preserve thumb orientation
-                normal = -knuckle.normal(after=fingerJoints[-1])
+            if 'Thumb' in knuckle:
+                normal = -knuckle.normal(before=pose_joints['Knuckle'][-2], after=fingerJoints[-1])
                 cmds.parent(fingerJoints[0], w=True)
                 mult = -1 if knuckle.side == Side.RIGHT else 1
                 temp_constraint = cmds.aimConstraint(fingerJoints[0], knuckle, wu=mult * normal)
