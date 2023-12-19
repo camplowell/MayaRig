@@ -23,7 +23,7 @@ class Joint(MayaObject):
         self._end_reserving()
     
     @classmethod
-    def marker(cls, side:Side, name:str, pos:'om.MVector|Tuple[float, float, float]', size:float=None, * , type_:str=None, onCollision=CollisionBehavior.INCREMENT):
+    def marker(cls, side:Side, name:str, pos:'om.MVector|Tuple[float, float, float]', size:float=None, * , type_:str=None, onCollision=CollisionBehavior.INCREMENT, radius=1):
         """Create a new marker joint.
 
         Args:
@@ -39,7 +39,7 @@ class Joint(MayaObject):
         if not type_:
             type_ = name
         marker = Joint.compose(side, name, Suffix.MARKER).resolve_collisions(onCollision)
-        cmds.joint(n=marker, p=pos)
+        cmds.joint(n=marker, p=pos, rad=radius)
         if size:
             marker.addAttr(_CONTROL_SIZE_ATTR, value=size, type_='float', keyable=False)
         marker.addAttr(_JOINT_TYPE_ATTR, value=type_, type_='string', channelBox=False, lock=True)
@@ -336,6 +336,16 @@ class JointCollection(Iterable):
         ret = self[self._i]
         self._i += 1
         return ret
+    
+    def get(self, key=..., * , side:Side=..., name:str=...):
+        keyFilter = lambda x: key is ... or (x.type_ == key)
+        sideFilter = lambda x: side is ... or (x.side == side)
+        nameFilter = lambda x: name is ... or (x.name == name)
+
+        result = [joint for joint in self._joints if joint.exists() and keyFilter and sideFilter and nameFilter]
+        if len(result) == 1:
+            return result[0]
+        return result
     
     def pop(self, index):
         if type(index) == str and index not in self._cache:
