@@ -79,7 +79,10 @@ class HumanoidArm(Limb):
         return bind_joints
     
     def _cleanup(self, pose_joints: JointCollection, bind_joints: JointCollection):
-        return super()._cleanup(pose_joints, bind_joints)
+        for joint in pose_joints:
+            joint.clear_attributes(keep=[])
+        for joint in bind_joints:
+            joint.clear_attributes(keep=[])
 
     @classmethod
     def _finger_markers(cls, finger, metacarpal_pos, start_x, start_z, length):
