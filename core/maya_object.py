@@ -71,7 +71,6 @@ def _resolve_name(*args, number=None):
     return initial + side + name + (str(number) if number else '') + '_' + suffix
 
 class MayaObject(str):
-    ROTATE_ORDER = {'xyz':0, 'yzx':1, 'zxy':2, 'xzy':3, 'yxz':4, 'zyx':5}
     def __new__(cls, *args):
         return str.__new__(cls, _resolve_name(*args))
     
@@ -103,21 +102,7 @@ class MayaObject(str):
                 cmds.warning('Joint name is not capitalized: {}'.format(self))
         except Exception as e:
             pass
-        self._begin_reserving()
-        self.visibility = self.attr('visibility')
-        self.translate_ = self.attr('translate')
-        self.rotate = self.attr('rotate')
-        self.scale = self.attr('scale')
-        self.offsetParentMatrix = self.attr('offsetParentMatrix')
-        self.matrix = self.attr('matrix')
-        self.inverseMatrix = self.attr('inverseMatrix')
-        self.parentMatrix = self.attr('parentMatrix[0]')
-        self.parentInverseMatrix = self.attr('parentInverseMatrix[0]')
-        self.worldMatrix = self.attr('worldMatrix[0]')
-        self.worldInverseMatrix = self.attr('worldInverseMatrix[0]')
-        self.rotateOrder = self.attr('rotateOrder')
-        self._end_reserving()
-
+    
     @classmethod
     def compose(cls, side:Side, name:str, suffix:str, * , initials:str=None):
         """Initialize with separate components."""
@@ -237,77 +222,6 @@ class MayaObject(str):
         """The node type of the given object"""
         return cmds.objectType(self)
     
-    def position(self):
-        """Returns the world-space position of the object. (rotation pivot by default)"""
-        self._assert_exists()
-        return om.MVector(cmds.xform(self, q=True, rp=True, ws=True))
-    
-    def offset_to(self, other:MayaObject) -> om.MVector:
-        self._assert_exists()
-        other._assert_exists()
-        return other.position() - self.position()
-
-    def set_rest(self):
-        """Apply the current transformation of the object into the offset parent matrix"""
-        local_matrix = om.MMatrix(cmds.xform(self, q=True, m=True, ws=False))
-        offset_parent_matrix = self.attr('offsetParentMatrix').get_mat()
-        baked_matrix = local_matrix * offset_parent_matrix
-        self.attr('offsetParentMatrix').set(baked_matrix)
-        cmds.makeIdentity(self, a=False, t=True, r=True, s=True)
-
-    def children(self, type_:str=None):
-        """Get a list of this object's children
-
-        Args:
-            type_: Limit results to the given node type.
-
-        Returns:
-            List[MayaObject]: This object's children
-        """
-        kwargs = {'typ':type_} if type_ else {}
-        return [MayaObject(child) for child in cmds.listRelatives(self, c=True, **kwargs) or []]
-    
-    def child(self, type_:str=None):
-        """Get this object's the first child.
-
-        Args:
-            type_: Limit results to the given node type.
-
-        Returns:
-            MayaObject: This object's first child
-        """
-        children = self.children(type_)
-        return children[0] if children else None
-    
-    def descendants(self, type_:str=None):
-        """Get a list of this object's descendants
-
-        Args:
-            type_: Limit results to the given node type.
-
-        Returns:
-            List[MayaObject]: This object's descendants
-        """
-        kwargs = {'typ':type_} if type_ else {}
-        return [MayaObject(descendant) for descendant in cmds.listRelatives(self, ad=True, **kwargs) or []]
-    
-    def parent(self):
-        """Get this object's parent"""
-        parents = cmds.listRelatives(self, p=True)
-        if parents:
-            return MayaObject(parents[0])
-        return None
-    
-    def ancestors(self):
-        """Get this object's ancestors"""
-        ancestors = str(cmds.listRelatives(self, f=True)).split('|')[:-1]
-        return [MayaObject(ancestor) for ancestor in ancestors or []]
-    
-    def root_ancestor(self):
-        """Get the top-level parent of this object"""
-        hierarchy = str(cmds.listRelatives(self, f=True)).split('|')
-        return MayaObject(hierarchy[0])
-
     def attr(self, attribute:str):
         """Get an attribute of this object"""
         return MayaAttribute(self, attribute)
@@ -337,6 +251,16 @@ class MayaObject(str):
         elif type_ in ['string', 'stringArray', 'matrix', 'reflectanceRGB', 'spectrumRGB', 'doubleArray', 'floatArray', 'Int32Array', 'vectorArray', 'nurbsCurve', 'nurbsSurface', 'mesh', 'lattice', 'pointArray']:
             cmds.addAttr(self, ln=attribute, dt=type_, k=keyable)
             ret.set(value)
+        elif type_[-1] in ['2', '3']:
+            cmds.addAttr(self, ln=attribute, at=type_, k=keyable)
+            subs = []
+            for i, suffix in enumerate(['X', 'Y', 'Z'][:int(type_[-1])]):
+                sub = '{}{}'.format(attribute, suffix)
+                cmds.addAttr(self, ln=sub, p=attribute, at=type_[:-1], dv=value[i], k=keyable)
+                subs.append(sub)
+            if channelBox:
+                for sub in subs:
+                    cmds.setAttr(self.attr(sub), cb=channelBox)
         else:
             kwargs = {}
             if min is not None:
@@ -375,7 +299,8 @@ class MayaObject(str):
     def clear_attributes(self, * , keep:List[str]=[]):
         for attr in cmds.listAttr(self, ud=True) or []:
             if attr not in keep:
-                self.attr(attr).delete()
+                if self.attr(attr).exists():
+                    self.attr(attr).delete()
 
     def _begin_reserving(self):
         """Pause syntactic sugar for setting the value of Maya attributes"""
@@ -400,6 +325,98 @@ class MayaObject(str):
                 current.set(value)
                 return
         object.__setattr__(self, name, value)
+
+class MayaDagObject(MayaObject):
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._begin_reserving()
+        self.visibility = self.attr('visibility')
+        self.translate_ = self.attr('translate')
+        self.rotate = self.attr('rotate')
+        self.scale = self.attr('scale')
+        self.offsetParentMatrix = self.attr('offsetParentMatrix')
+        self.matrix = self.attr('matrix')
+        self.inverseMatrix = self.attr('inverseMatrix')
+        self.parentMatrix = self.attr('parentMatrix[0]')
+        self.parentInverseMatrix = self.attr('parentInverseMatrix[0]')
+        self.worldMatrix = self.attr('worldMatrix[0]')
+        self.worldInverseMatrix = self.attr('worldInverseMatrix[0]')
+        self.rotateOrder = self.attr('rotateOrder')
+        self._end_reserving()
+    
+    def position(self):
+        """Returns the world-space position of the object. (rotation pivot by default)"""
+        self._assert_exists()
+        return om.MVector(cmds.xform(self, q=True, rp=True, ws=True))
+    
+    def offset_to(self, other:MayaDagObject) -> om.MVector:
+        self._assert_exists()
+        other._assert_exists()
+        return other.position() - self.position()
+
+    def set_rest(self):
+        """Apply the current transformation of the object into the offset parent matrix"""
+        local_matrix = om.MMatrix(cmds.xform(self, q=True, m=True, ws=False))
+        offset_parent_matrix = self.attr('offsetParentMatrix').get_mat()
+        baked_matrix = local_matrix * offset_parent_matrix
+        self.attr('offsetParentMatrix').set(baked_matrix)
+        cmds.makeIdentity(self, a=False, t=True, r=True, s=True)
+
+    def children(self, type_:str=None):
+        """Get a list of this object's children
+
+        Args:
+            type_: Limit results to the given node type.
+
+        Returns:
+            List[MayaObject]: This object's children
+        """
+        kwargs = {'typ':type_} if type_ else {}
+        return [MayaDagObject(child) for child in cmds.listRelatives(self, c=True, **kwargs) or []]
+    
+    def child(self, type_:str=None):
+        """Get this object's the first child.
+
+        Args:
+            type_: Limit results to the given node type.
+
+        Returns:
+            MayaObject: This object's first child
+        """
+        children = self.children(type_)
+        return children[0] if children else None
+    
+    def descendants(self, type_:str=None):
+        """Get a list of this object's descendants
+
+        Args:
+            type_: Limit results to the given node type.
+
+        Returns:
+            List[MayaObject]: This object's descendants
+        """
+        kwargs = {'typ':type_} if type_ else {}
+        return [MayaDagObject(descendant) for descendant in cmds.listRelatives(self, ad=True, **kwargs) or []]
+    
+    def parent(self):
+        """Get this object's parent"""
+        parents = cmds.listRelatives(self, p=True)
+        if parents:
+            return MayaDagObject(parents[0])
+        return None
+    
+    def ancestors(self):
+        """Get this object's ancestors"""
+        ancestors = str(cmds.listRelatives(self, f=True)).split('|')[:-1]
+        return [MayaDagObject(ancestor) for ancestor in ancestors or []]
+    
+    def root_ancestor(self):
+        """Get the top-level parent of this object"""
+        hierarchy = str(cmds.listRelatives(self, f=True)).split('|')
+        return MayaDagObject(hierarchy[0])
+
+    
     
 class MayaAttribute(str):
     def __new__(cls, object, attribute):
@@ -407,6 +424,10 @@ class MayaAttribute(str):
     def __init__(self, object, attribute):
         self._obj = object
         self._attr = attribute
+
+    @property
+    def obj(self):
+        return self._obj
 
     def child(self, attribute:str):
         """Get a child attribute
@@ -468,6 +489,10 @@ class MayaAttribute(str):
     def get_str(self):
         """Get the value of this attribute as a string"""
         return str(self._get())
+    
+    def get_enum(self):
+        """Get the enum name for this attribute"""
+        return self.enum_values[self.get()]
     
     def _get(self, default=None) -> Any:
         if not self.exists():

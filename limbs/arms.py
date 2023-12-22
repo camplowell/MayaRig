@@ -126,14 +126,14 @@ class HumanoidArm(Limb):
                     joint.orient_match(knuckle)
         
 
-    def _generate_fk(self, pose_joints:JointCollection, ik_switch:MayaObject, shoulder_parent:MayaObject):
+    def _generate_fk(self, pose_joints:JointCollection, ik_switch:MayaDagObject, shoulder_parent:MayaDagObject):
         fk = Joint.variants(pose_joints, Suffix.FK_JOINT, root_parent=self.systems_group)
         upper_fk = controls.circle(
             fk['Shoulder'],
             'UpperArm', suffix=Suffix.FK_CONTROL,
             parent=shoulder_parent
         )
-        upper_fk.rotateOrder.set(MayaObject.ROTATE_ORDER['xyz'])
+        upper_fk.rotateOrder.set('xyz')
         Nodes.Structures.spaceSwitch([Character.cog_control, Character.layout_control], upper_fk, options=['Shoulders', 'CoG', 'Layout'], defaultValue=1, rotate=True)
         Nodes.Structures.parentConstraint(upper_fk, fk['Shoulder'])
         ik_switch.attr('fk') >> upper_fk.visibility
@@ -153,14 +153,14 @@ class HumanoidArm(Limb):
             'Wrist', suffix=Suffix.FK_CONTROL,
             parent=forearm_fk
         )
-        upper_fk.rotateOrder.set(MayaObject.ROTATE_ORDER['yzx'])
+        upper_fk.rotateOrder.set('yzx')
         Nodes.Structures.parentConstraint(wrist_fk, fk['Wrist'])
         ik_switch.attr('fk') >> wrist_fk.visibility
         wrist_fk.lockAttrs(['translate'])
 
         return fk
     
-    def _generate_ik(self, pose:JointCollection, ik_switch:MayaObject):
+    def _generate_ik(self, pose:JointCollection, ik_switch:MayaDagObject):
         ik = Joint.variants(pose, Suffix.IK_JOINT, root_parent=self.systems_group)
         Nodes.Structures.parentConstraint(pose[0].parent(), ik[0])
         mel.eval('ik2Bsolver;')
@@ -182,7 +182,7 @@ class HumanoidArm(Limb):
         pole.lockAttrs(['rotate', 'scale'])
         pole.attr('showManipDefault').set(1) # Translate
 
-        handle = MayaObject(cmds.ikHandle(
+        handle = MayaDagObject(cmds.ikHandle(
             n=self.control_group.but_with(suffix='ikHandle'),
             sj=ik['Shoulder'],
             ee=ik['Wrist'],
@@ -198,14 +198,14 @@ class HumanoidArm(Limb):
             position=pose['Wrist'].position(),
             relative=False
         )
-        ik_wrist.rotateOrder.set(MayaObject.ROTATE_ORDER['yzx'])
+        ik_wrist.rotateOrder.set('yzx')
         ik_switch.attr('ik') >> ik_wrist.visibility
         Nodes.Structures.spaceSwitch([Character.cog_control, Character.layout_control], ik_wrist, options=['Shoulders', 'CoG', 'Layout'], defaultValue=1)
         Nodes.Structures.parentConstraint(ik_wrist, handle)
         cmds.orientConstraint(ik_wrist, ik['Wrist'], mo=True)
         return ik
     
-    def _ik_switch(self, pose:JointCollection, fk:JointCollection, ik:JointCollection, switch:MayaObject):
+    def _ik_switch(self, pose:JointCollection, fk:JointCollection, ik:JointCollection, switch:MayaDagObject):
         Nodes.Structures.compositeParent(pose['Wrist'], Character.layout_control, switch)
 
         for key, pose_joints in pose.items():
@@ -276,8 +276,8 @@ class HumanoidArm(Limb):
                 Nodes.Structures.parentConstraint(ctrl, joint)
                 prev = ctrl
 
-def _clavicle_control(ref:Joint, name: str, parent:MayaObject, suffix=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT):
-    ctrl = MayaObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
+def _clavicle_control(ref:Joint, name: str, parent:MayaDagObject, suffix=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT):
+    ctrl = MayaDagObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
     radius = ref.control_size()
     to_child = ref.to_child()
 

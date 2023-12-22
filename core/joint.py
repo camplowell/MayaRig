@@ -5,7 +5,7 @@ import warnings
 from maya import cmds
 import maya.api.OpenMaya as om
 
-from .maya_object import MayaObject, Side, Suffix, CollisionBehavior
+from .maya_object import MayaDagObject, Side, Suffix, CollisionBehavior
 
 from . import selection
 
@@ -14,7 +14,7 @@ _SYMMETRY_ATTR = 'symmetrical'
 _JOINT_TYPE_ATTR = 'mayaRigJoint'
 _CONTROL_SIZE_ATTR = 'controlSize'
 
-class Joint(MayaObject):
+class Joint(MayaDagObject):
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -219,7 +219,7 @@ class Joint(MayaObject):
         if flip_right and self.side == Side.RIGHT:
             self.flip_joint_orient()
     
-    def orient_to(self, normal:Tuple[float, float, float], * , target:MayaObject=None, secondaryAxis='yup', flip_right=True, twist=0, relativeTo:MayaObject=None):
+    def orient_to(self, normal:Tuple[float, float, float], * , target:MayaDagObject=None, secondaryAxis='yup', flip_right=True, twist=0, relativeTo:MayaDagObject=None):
         UPVEC = {'yup':(0, 1, 0), 'ydown':(0,-1, 0), 'zup':(0, 0, 1), 'zdown':(0, 0,-1)}
         sel = selection.get()
         children = self.children()
@@ -269,11 +269,11 @@ class Joint(MayaObject):
             before = self.parent()
         if not after:
             after = self.child()
-        if isinstance(before, MayaObject):
+        if isinstance(before, MayaDagObject):
             before = self.offset_to(before)
         else:
             before = om.MVector(before) - self.position()
-        if isinstance(after, MayaObject):
+        if isinstance(after, MayaDagObject):
             after = self.offset_to(after)
         else:
             after = om.MVector(after) - self.position()

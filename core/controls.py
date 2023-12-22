@@ -7,7 +7,7 @@ import maya.api.OpenMaya as om
 
 from .joint import Joint
 from .nodes import Nodes
-from .maya_object import CollisionBehavior, MayaObject, Side, Suffix
+from .maya_object import CollisionBehavior, MayaDagObject, Side, Suffix
 from . import groups, selection
 
 class Axis(Enum):
@@ -19,8 +19,8 @@ _VECTORS = {Axis.X:om.MVector(1, 0, 0), Axis.Y:om.MVector(0, 1, 0), Axis.Z:om.MV
 _ROTATIONS = {Axis.X:(0, 0, -90), Axis.Y:(0, 0, 0), Axis.Z:(90, 0, 0)}
 _UP = (0, 1, 0)
 
-def circle(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, position:Tuple[float, float, float]=(0, 0, 0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, stretch:Tuple[float, float, float]=(1, 1, 1), relative=True, **kwargs) -> MayaObject:
-    ctrl = MayaObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
+def circle(ref:Joint, name:str, parent:MayaDagObject, * , axis=Axis.X, position:Tuple[float, float, float]=(0, 0, 0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, stretch:Tuple[float, float, float]=(1, 1, 1), relative=True, **kwargs) -> MayaDagObject:
+    ctrl = MayaDagObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
     radius = ref.control_size()
     cmds.circle(n=ctrl, nr=_UP, r=radius)[0]
     cmds.scale(*stretch, ctrl)
@@ -30,8 +30,8 @@ def circle(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, position:Tup
 
     return place_ctrl(ctrl, ref, parent=parent, position=position, relative=relative)
 
-def square(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, position:Tuple[float, float, float]=(0, 0, 0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, stretch:Tuple[float, float, float]=(1,1,1), relative=True, **kwargs) -> MayaObject:
-    ctrl = MayaObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
+def square(ref:Joint, name:str, parent:MayaDagObject, * , axis=Axis.X, position:Tuple[float, float, float]=(0, 0, 0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, stretch:Tuple[float, float, float]=(1,1,1), relative=True, **kwargs) -> MayaDagObject:
+    ctrl = MayaDagObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
     radius = ref.control_size() * sqrt(2)
     cmds.circle(n=ctrl, nr=_UP, r=radius, d=1, s=4)[0]
     cmds.rotate(0, 45, 0, ctrl)
@@ -43,8 +43,8 @@ def square(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, position:Tup
 
     return place_ctrl(ctrl, ref, parent=parent, position=position, relative=relative)
 
-def octahedron(ref:Joint, name:str, parent:MayaObject, * , position:Tuple[float, float, float]=(0, 0, 0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, relative=True, inherit_transforms=False, **kwargs) -> MayaObject:
-    ctrl = MayaObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
+def octahedron(ref:Joint, name:str, parent:MayaDagObject, * , position:Tuple[float, float, float]=(0, 0, 0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, relative=True, inherit_transforms=False, **kwargs) -> MayaDagObject:
+    ctrl = MayaDagObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
     if 'radius' in kwargs:
         r = kwargs['radius']
     else:
@@ -55,8 +55,8 @@ def octahedron(ref:Joint, name:str, parent:MayaObject, * , position:Tuple[float,
     ])
     return place_ctrl(ctrl, ref, parent=parent, position=position, relative=relative, inherit_transforms=inherit_transforms)
 
-def circle_with_arows(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, position:Tuple[float, float, float]=(0, 0, 0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, relative=True, arrow_width=0.125, arrow_length=0.125, **kwargs) -> MayaObject:
-    ctrl = MayaObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
+def circle_with_arows(ref:Joint, name:str, parent:MayaDagObject, * , axis=Axis.X, position:Tuple[float, float, float]=(0, 0, 0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, relative=True, arrow_width=0.125, arrow_length=0.125, **kwargs) -> MayaDagObject:
+    ctrl = MayaDagObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
     if 'radius' in kwargs:
         radius = kwargs['radius']
     else:
@@ -96,8 +96,8 @@ def circle_with_arows(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, p
     ctrl.set_rest()
     return place_ctrl(ctrl, ref, parent=parent, position=position, relative=relative)
 
-def saddle(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, position:Tuple[float, float, float]=(0, 0, 0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, stretch:Tuple[float, float, float]=(1, 1, 1), relative=True, **kwargs) -> MayaObject:
-    ctrl = MayaObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
+def saddle(ref:Joint, name:str, parent:MayaDagObject, * , axis=Axis.X, position:Tuple[float, float, float]=(0, 0, 0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, stretch:Tuple[float, float, float]=(1, 1, 1), relative=True, **kwargs) -> MayaDagObject:
+    ctrl = MayaDagObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
     radius = ref.control_size()
     cmds.circle(n=ctrl, nr=_UP, r=radius)[0]
     pts = ctrl.attr('cv')
@@ -110,8 +110,8 @@ def saddle(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, position:Tup
 
     return place_ctrl(ctrl, ref, parent=parent, position=position, relative=relative)
 
-def pointer(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, tangent:Tuple[float, float, float]=(0,1,0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, tipScale=0.25, **kwargs) -> MayaObject:
-    ctrl = MayaObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
+def pointer(ref:Joint, name:str, parent:MayaDagObject, * , axis=Axis.X, tangent:Tuple[float, float, float]=(0,1,0), suffix:str=Suffix.CONTROL, onCollision=CollisionBehavior.INCREMENT, tipScale=0.25, **kwargs) -> MayaDagObject:
+    ctrl = MayaDagObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
     distance = ref.control_size() * 1.5
     radius = distance * tipScale
     mult = -1 if ref.side == Side.RIGHT else 1
@@ -125,8 +125,8 @@ def pointer(ref:Joint, name:str, parent:MayaObject, * , axis=Axis.X, tangent:Tup
     combine_curves([circle, line], ctrl)
     return place_ctrl(ctrl, ref, parent=parent)
 
-def fkIkSwitch(ref:Joint, name:str, parent:MayaObject, * , position:Tuple[float, float, float], relative=True, suffix:str=Suffix.SWITCH_CONTROL, onCollision=CollisionBehavior.INCREMENT, size:float=None, default=0):
-    ctrl = MayaObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
+def fkIkSwitch(ref:Joint, name:str, parent:MayaDagObject, * , position:Tuple[float, float, float], relative=True, suffix:str=Suffix.SWITCH_CONTROL, onCollision=CollisionBehavior.INCREMENT, size:float=None, default=0):
+    ctrl = MayaDagObject(ref.but_with(name=name, suffix=suffix)).resolve_collisions(onCollision)
     if not size:
         size = ref.control_size()
     
@@ -136,13 +136,13 @@ def fkIkSwitch(ref:Joint, name:str, parent:MayaObject, * , position:Tuple[float,
     fk = _text_curve('FK', scale=size)
     ik = _text_curve('IK', scale=size)
 
-    fk_curves = [MayaObject(curve) for curve in cmds.listRelatives(fk, shapes=True)]
-    ik_curves = [MayaObject(curve) for curve in cmds.listRelatives(ik, shapes=True)]
+    fk_curves = [MayaDagObject(curve) for curve in cmds.listRelatives(fk, shapes=True)]
+    ik_curves = [MayaDagObject(curve) for curve in cmds.listRelatives(ik, shapes=True)]
     
     combine_curves([fk, ik], ctrl)
 
     ctrl.addAttr('ik', value=default, type_='enum', options=['FK', 'IK'], niceName='Posing')
-    fk_visibility = MayaObject(cmds.shadingNode('reverse', n=ctrl.but_with(suffix='fkVisibility').resolve_collisions(), au=True))
+    fk_visibility = MayaDagObject(cmds.shadingNode('reverse', n=ctrl.but_with(suffix='fkVisibility').resolve_collisions(), au=True))
     ctrl.attr('ik') >> fk_visibility.attr('inputX')
     fk_visibility.attr('outputX') >> ctrl.addAttr('fk', 1, type_='enum', options=['Off', 'On'], keyable=False, channelBox=False)
 
@@ -153,7 +153,7 @@ def fkIkSwitch(ref:Joint, name:str, parent:MayaObject, * , position:Tuple[float,
 
     return place_ctrl(ctrl, ref, parent=parent, position=position, relative=relative, rotate=False)
 
-def place_ctrl(ctrl:MayaObject, ref:Joint, parent:MayaObject=None, position:Tuple[float, float, float] = (0, 0, 0), relative=True, inherit_transforms=True, * , rotate=True):
+def place_ctrl(ctrl:MayaDagObject, ref:Joint, parent:MayaDagObject=None, position:Tuple[float, float, float] = (0, 0, 0), relative=True, inherit_transforms=True, * , rotate=True):
     """Places a control (assumed to be at the origin) and sets its rest position."""
     if relative:
         if position[0] or position[1] or position[2]:
@@ -175,7 +175,7 @@ def place_ctrl(ctrl:MayaObject, ref:Joint, parent:MayaObject=None, position:Tupl
 
     return ctrl
 
-def combine_curves(curves:List[str], name:'str|MayaObject'='temp#'):
+def combine_curves(curves:List[str], name:'str|MayaDagObject'='temp#'):
     """Combine multiple curves into a single object (placed at the world origin)"""
     out = cmds.group(n=name, em=True)
     cmds.parent(curves, out)
@@ -185,16 +185,16 @@ def combine_curves(curves:List[str], name:'str|MayaObject'='temp#'):
         cmds.parent(shapes, out, s=1, r=1)
         cmds.delete(curve_transform)
     cmds.select(out)
-    return MayaObject(out)
+    return MayaDagObject(out)
 
-def display_transform(source:MayaObject, target:MayaObject, systems_group:MayaObject):
+def display_transform(source:MayaDagObject, target:MayaDagObject, systems_group:MayaDagObject):
     #target_parent = target.parent()
     offset_grp = groups.new_at(source, suffix='displayOffset', parent=systems_group)
     Nodes.Structures.parentConstraint(target, offset_grp)
     prev_selection = selection.get()
     selection.set(target)
 
-    cluster = MayaObject(cmds.cluster(n=source.but_with(suffix='cluster'), bs=True, rel=True)[1])
+    cluster = MayaDagObject(cmds.cluster(n=source.but_with(suffix='cluster'), bs=True, rel=True)[1])
     cmds.parent(cluster, offset_grp)
     cluster.set_rest()
     cmds.parentConstraint(source, cluster, mo=True)

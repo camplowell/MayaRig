@@ -4,10 +4,10 @@ import maya.api.OpenMaya as om
 from maya import cmds
 
 from .context import Character
-from .maya_object import MayaObject, Suffix, Side, CollisionBehavior
+from .maya_object import MayaDagObject, Suffix, Side, CollisionBehavior
 from .nodes import Nodes
 
-def create(obj:MayaObject, contents:List[MayaObject]=[], * , parent:MayaObject=None, position:'om.MVector|Tuple[float, float, float]|None'=None, onCollision=CollisionBehavior.IGNORE):
+def create(obj:MayaDagObject, contents:List[MayaDagObject]=[], * , parent:MayaDagObject=None, position:'om.MVector|Tuple[float, float, float]|None'=None, onCollision=CollisionBehavior.IGNORE):
     if onCollision == CollisionBehavior.IGNORE and obj.exists():
         children = obj.children()
         if children:
@@ -22,12 +22,12 @@ def create(obj:MayaObject, contents:List[MayaObject]=[], * , parent:MayaObject=N
     obj = obj.resolve_collisions(onCollision=onCollision)
     return _new(obj, contents, parent, position)
 
-def new(side:Side, name:str, contents:List[MayaObject]=[], * , parent:MayaObject=None, position:'om.MVector|Tuple[float, float, float]|None' = None, suffix=Suffix.GROUP, onCollision:CollisionBehavior = CollisionBehavior.INCREMENT):
+def new(side:Side, name:str, contents:List[MayaDagObject]=[], * , parent:MayaDagObject=None, position:'om.MVector|Tuple[float, float, float]|None' = None, suffix=Suffix.GROUP, onCollision:CollisionBehavior = CollisionBehavior.INCREMENT):
     """Create a new group"""
-    group = MayaObject.compose(side, name, suffix, initials=Character.initials).resolve_collisions(onCollision)
+    group = MayaDagObject.compose(side, name, suffix, initials=Character.initials).resolve_collisions(onCollision)
     return _new(group, contents, parent, position)
 
-def _new(group:MayaObject, contents:List[MayaObject]=[], parent:MayaObject=None, position:'om.MVector|Tuple[float, float, float]|None'=None):
+def _new(group:MayaDagObject, contents:List[MayaDagObject]=[], parent:MayaDagObject=None, position:'om.MVector|Tuple[float, float, float]|None'=None):
     cmds.group(n=group, em=True)
     if parent:
         cmds.parent(group, parent)
@@ -36,18 +36,18 @@ def _new(group:MayaObject, contents:List[MayaObject]=[], parent:MayaObject=None,
     if contents:
         cmds.parent(*contents, group)
     group.set_rest()
-    return MayaObject(group)
+    return MayaDagObject(group)
 
-def new_at(ref:MayaObject, name:str=None, contents:List[MayaObject]=[], * , suffix:str=Suffix.GROUP, parent:MayaObject=None, offset:'om.MVector|Tuple[float, float, float]' = (0, 0, 0), onCollision:CollisionBehavior = CollisionBehavior.INCREMENT):
+def new_at(ref:MayaDagObject, name:str=None, contents:List[MayaDagObject]=[], * , suffix:str=Suffix.GROUP, parent:MayaDagObject=None, offset:'om.MVector|Tuple[float, float, float]' = (0, 0, 0), onCollision:CollisionBehavior = CollisionBehavior.INCREMENT):
     """Create a group at a specific object"""
     position = ref.position() + om.MVector(offset)
     
-    group = create(MayaObject(ref.but_with(name=name, suffix=suffix)), contents=contents, parent=parent, position=position, onCollision=onCollision)
+    group = create(MayaDagObject(ref.but_with(name=name, suffix=suffix)), contents=contents, parent=parent, position=position, onCollision=onCollision)
     
     return group
 
-def control_group(root:MayaObject, name:str):
-    control_group = MayaObject(root.but_with(name=name, suffix=Suffix.GROUP))
+def control_group(root:MayaDagObject, name:str):
+    control_group = MayaDagObject(root.but_with(name=name, suffix=Suffix.GROUP))
     if control_group.exists():
         return control_group
     _new(control_group, parent=Character.controls_grp, position=root.position())
@@ -56,8 +56,8 @@ def control_group(root:MayaObject, name:str):
         Nodes.Structures.parentConstraint(pose_parent, control_group)
     return control_group
 
-def systems_group(root:MayaObject, name:str) -> MayaObject:
-    system_group = MayaObject(root.but_with(name=name, suffix=Suffix.SYSTEM_GROUP))
+def systems_group(root:MayaDagObject, name:str) -> MayaDagObject:
+    system_group = MayaDagObject(root.but_with(name=name, suffix=Suffix.SYSTEM_GROUP))
     if system_group.exists():
         return system_group
     _new(system_group, parent=Character.systems_grp, position=root.position())

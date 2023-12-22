@@ -407,7 +407,7 @@ class Nodes:
     
     class Structures:
         @classmethod
-        def parentConstraint(cls, source:MayaObject, target: MayaObject, * , connect:bool=True, translate:bool=None, rotate:bool=None, scale:bool=None):
+        def parentConstraint(cls, source:MayaDagObject, target: MayaDagObject, * , connect:bool=True, translate:bool=None, rotate:bool=None, scale:bool=None):
             target_parent = target.parent()
             mat_hold = cmds.xform(target, q=True, m=True)
             cmds.xform(target, m=om.MMatrix.kIdentity)
@@ -440,7 +440,7 @@ class Nodes:
             return ret
         
         @classmethod
-        def compositeParent(cls, base_source:MayaObject, rot_source:MayaObject, target:MayaObject):
+        def compositeParent(cls, base_source:MayaDagObject, rot_source:MayaDagObject, target:MayaDagObject):
             base = Nodes.Structures.parentConstraint(base_source, target, connect=False)
             rotate = Nodes.Structures.parentConstraint(rot_source, target, connect=False)
             handle_blend = Nodes.blendMatrix(owner=target)
@@ -454,7 +454,7 @@ class Nodes:
 
 
         @classmethod
-        def spaceSwitch(cls, sources:List[MayaObject], target:MayaObject, * , attr:MayaAttribute=None, controller:MayaObject=None, name:str='space', niceName:str=None, defaultValue:int=0, options=[], includeParent=True, translate=None, rotate=None, scale=None, connect=True, lock_rot:MayaObject=None):
+        def spaceSwitch(cls, sources:List[MayaDagObject], target:MayaDagObject, * , attr:MayaAttribute=None, controller:MayaDagObject=None, name:str='space', niceName:str=None, defaultValue:int=0, options=[], includeParent=True, translate=None, rotate=None, scale=None, connect=True, lock_rot:MayaDagObject=None):
             if not attr:
                 controller = controller if controller else target
                 desired_options = len(sources) + int(includeParent)

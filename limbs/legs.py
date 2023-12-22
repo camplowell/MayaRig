@@ -5,7 +5,7 @@ import maya.api.OpenMaya as om
 from maya import mel
 
 from ..core.limb import Limb
-from ..core.maya_object import MayaObject, Side, Suffix
+from ..core.maya_object import MayaDagObject, Side, Suffix
 from ..core.joint import Joint, JointCollection
 from ..core import selection, controls, groups
 from ..core.nodes import Nodes
@@ -120,7 +120,7 @@ class HumanoidLeg(Limb):
 
         return fk_pose
 
-    def _generate_ik(self, pose:Dict[str, Joint], core_joints, ik_switch:MayaObject):
+    def _generate_ik(self, pose:Dict[str, Joint], core_joints, ik_switch:MayaDagObject):
         mel.eval('ik2Bsolver;')
         ik_pose = Joint.variants(core_joints, suffix=Suffix.IK_JOINT, root_parent=self.systems_group, clear_attributes=True)
 
@@ -143,7 +143,7 @@ class HumanoidLeg(Limb):
         pole.lockAttrs(['rotate', 'scale'])
         pole.attr('showManipDefault').set(1) # Translate
 
-        handle = MayaObject(cmds.ikHandle(
+        handle = MayaDagObject(cmds.ikHandle(
             n=self.control_group.but_with(suffix='ikHandle'),
             sj=ik_pose['Hip'],
             ee=ik_pose['Ankle'],
@@ -245,14 +245,14 @@ class HumanoidLeg(Limb):
         foot_ctrl.attr('toeTap') >> tap_comp.input1D[1]
         tap_comp.output1D >> flex_piv.attr('rotateX')
 
-        foot_handle = MayaObject(cmds.ikHandle(
+        foot_handle = MayaDagObject(cmds.ikHandle(
             n=ik_pose['Ankle'].but_with(suffix='ikHandle'),
             sj=ik_pose['Ankle'],
             ee=ik_pose['BallOfFoot'],
             sol='ikSCsolver'
         )[0])
         cmds.parent(foot_handle, flex_piv)
-        toe_handle = MayaObject(cmds.ikHandle(
+        toe_handle = MayaDagObject(cmds.ikHandle(
             n=ik_pose['BallOfFoot'].but_with(name='Toe', suffix='ikHandle'),
             sj=ik_pose['BallOfFoot'],
             ee=ik_pose['TipOfToe'],
@@ -262,7 +262,7 @@ class HumanoidLeg(Limb):
 
         return ik_pose
 
-    def _ik_switch(self, pose, fk_index, ik_index, ik_switch:MayaObject):
+    def _ik_switch(self, pose, fk_index, ik_index, ik_switch:MayaDagObject):
         Nodes.Structures.compositeParent(pose['Ankle'], Character.layout_control, ik_switch)
 
         for key, pose_joints in pose.items():
@@ -274,7 +274,7 @@ class HumanoidLeg(Limb):
             )
 
 
-def _foot_ctrl(pose:JointCollection, parent:MayaObject):
+def _foot_ctrl(pose:JointCollection, parent:MayaDagObject):
     outset = pose['Ankle'].attr('footControlOutset').get_float()
     ankle_pos = pose['Ankle'].position()
     min_x = min(pose['Inner'].position().x, pose['Outer'].position().x) - outset
@@ -282,7 +282,7 @@ def _foot_ctrl(pose:JointCollection, parent:MayaObject):
     min_z = min(pose['Heel'].position().z, pose['TipOfToe'].position().z) - outset
     max_z = max(pose['Heel'].position().z, pose['TipOfToe'].position().z) + outset
 
-    ankle_ctrl = MayaObject(pose['Ankle'].but_with(name='Foot', suffix=Suffix.CONTROL).resolve_collisions())
+    ankle_ctrl = MayaDagObject(pose['Ankle'].but_with(name='Foot', suffix=Suffix.CONTROL).resolve_collisions())
     cmds.curve(n=ankle_ctrl, d=1, p=[
         om.MVector(min_x, 0, min_z) - ankle_pos,
         om.MVector(max_x, 0, min_z) - ankle_pos,

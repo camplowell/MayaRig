@@ -8,7 +8,7 @@ from maya import cmds
 
 from .joint import Joint, JointCollection
 from .context import Character
-from .maya_object import MayaObject
+from .maya_object import MayaDagObject
 from . import groups
 
 from .nodes import Nodes
@@ -17,8 +17,8 @@ class Limb(ABC):
     key:str
     displayName:str
 
-    control_group:MayaObject=None
-    systems_group:MayaObject=None
+    control_group:MayaDagObject=None
+    systems_group:MayaDagObject=None
     _limb_types: Dict[str, Type[Limb]] = {}
     def __init_subclass__(cls, **kwargs) -> None:
         if cls.key in Limb._limb_types:

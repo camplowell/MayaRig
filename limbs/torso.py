@@ -7,7 +7,7 @@ from ..core.nodes import Nodes
 from ..core.joint import Joint, JointCollection
 from ..core.limb import Limb
 from ..core.context import Character
-from ..core.maya_object import Side, MayaObject, Suffix
+from ..core.maya_object import Side, MayaDagObject, Suffix
 
 def _mixLocalRots(pelvis_ctrl, middle_ctrl, shoulder_ctrl, blend):
     shoulder_rot = _rotQuat(shoulder_ctrl)
@@ -28,7 +28,7 @@ def _mixLocalRots(pelvis_ctrl, middle_ctrl, shoulder_ctrl, blend):
     mid_offsetParent.matrixSum >> middle_ctrl.offsetParentMatrix
     
 
-def _rotQuat(control:MayaObject):
+def _rotQuat(control:MayaDagObject):
     rot = Nodes.euler2quat(owner=control)
     control.rotate >> rot.inputRotate
     control.attr('rotateOrder') >> rot.rotateOrder
@@ -71,10 +71,10 @@ class Forward(Limb):
         spine1 = pose_joints['Spine1']
         spine2 = pose_joints['Spine2']
 
-        middle_ctrl:MayaObject = controls.circle(spine0, 'MiddleTorso', parent=control_grp, position=spine0.to_child(), axis=controls.Axis.Y)
-        middle_ctrl.attr('rotateOrder').set(MayaObject.ROTATE_ORDER['yzx'])
-        shoulder_ctrl:MayaObject = controls.saddle(spine1, 'UpperTorso', parent=control_grp, stretch=(1, -1, 1), axis=controls.Axis.Y, position=spine1.to_child() + (0.5 * spine2.to_child()))
-        shoulder_ctrl.attr('rotateOrder').set(MayaObject.ROTATE_ORDER['yzx'])
+        middle_ctrl:MayaDagObject = controls.circle(spine0, 'MiddleTorso', parent=control_grp, position=spine0.to_child(), axis=controls.Axis.Y)
+        middle_ctrl.attr('rotateOrder').set('yzx')
+        shoulder_ctrl:MayaDagObject = controls.saddle(spine1, 'UpperTorso', parent=control_grp, stretch=(1, -1, 1), axis=controls.Axis.Y, position=spine1.to_child() + (0.5 * spine2.to_child()))
+        shoulder_ctrl.attr('rotateOrder').set('yzx')
 
         _mixLocalRots(pelvis_ctrl, middle_ctrl, shoulder_ctrl, spine0.attr('blend').get())
 
@@ -126,7 +126,7 @@ class Forward(Limb):
         cog_bone.dissolve()
 
         pelvis_ctrl = controls.saddle(pelvis, 'Pelvis', parent=self.control_group, axis=controls.Axis.Y)
-        pelvis_ctrl.attr('rotateOrder').set(MayaObject.ROTATE_ORDER['yzx'])
+        pelvis_ctrl.attr('rotateOrder').set('yzx')
 
         nib_pos = pelvis_nib.position()
         pelvis_children = pelvis.children()
@@ -169,7 +169,7 @@ class Simple(Limb):
         
         cog_bone.dissolve()
         pelvis_ctrl = controls.saddle(pelvis, 'Pelvis', parent=self.control_group, axis=controls.Axis.Y)
-        pelvis_ctrl.attr('rotateOrder').set(MayaObject.ROTATE_ORDER['yzx'])
+        pelvis_ctrl.attr('rotateOrder').set('yzx')
 
         Nodes.Structures.parentConstraint(pelvis_ctrl, pelvis)
 

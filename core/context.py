@@ -1,7 +1,7 @@
 import re
 from maya import cmds
 import maya.api.OpenMaya as om
-from .maya_object import MayaObject, Side, Suffix
+from .maya_object import MayaDagObject, Side, Suffix
 
 _NAME_ATTR = 'rigGenName'
 _INITIALS_ATTR = 'rigGenInitials'
@@ -19,17 +19,17 @@ class Character:
     name:str = None
     initials:str = None
 
-    marker_grp:MayaObject = None
-    output_grp:MayaObject = None
-    internals_grp:MayaObject = None
+    marker_grp:MayaDagObject = None
+    output_grp:MayaDagObject = None
+    internals_grp:MayaDagObject = None
 
-    geometry_grp:MayaObject = None
-    pose_grp:MayaObject = None
-    systems_grp:MayaObject = None
-    bind_grp:MayaObject = None
+    geometry_grp:MayaDagObject = None
+    pose_grp:MayaDagObject = None
+    systems_grp:MayaDagObject = None
+    bind_grp:MayaDagObject = None
 
-    layout_control:MayaObject = None
-    cog_control:MayaObject = None
+    layout_control:MayaDagObject = None
+    cog_control:MayaDagObject = None
     
     @classmethod
     def setCharacter(cls, initials, name):
@@ -37,15 +37,15 @@ class Character:
         cls.name = _camelCase(name)
         cls.initials = initials
 
-        cls.marker_grp = MayaObject(cls.name + '_markers')
-        cls.output_grp = MayaObject(cls.name)
-        cls.internals_grp = MayaObject('{}_DO_NOT_TOUCH'.format(cls.initials))
+        cls.marker_grp = MayaDagObject(cls.name + '_markers')
+        cls.output_grp = MayaDagObject(cls.name)
+        cls.internals_grp = MayaDagObject('{}_DO_NOT_TOUCH'.format(cls.initials))
 
-        cls.controls_grp = MayaObject.compose(Side.CENTER, 'Controls', Suffix.GROUP, initials=initials)
-        cls.geometry_grp = MayaObject.compose(Side.CENTER, 'Geometry', Suffix.GROUP, initials=initials)
-        cls.pose_grp = MayaObject.compose(Side.CENTER, 'Pose', Suffix.GROUP, initials=initials)
-        cls.systems_grp = MayaObject.compose(Side.CENTER, 'Systems', Suffix.GROUP, initials=initials)
-        cls.bind_grp = MayaObject.compose(Side.CENTER, 'Bind', Suffix.GROUP, initials=initials)
+        cls.controls_grp = MayaDagObject.compose(Side.CENTER, 'Controls', Suffix.GROUP, initials=initials)
+        cls.geometry_grp = MayaDagObject.compose(Side.CENTER, 'Geometry', Suffix.GROUP, initials=initials)
+        cls.pose_grp = MayaDagObject.compose(Side.CENTER, 'Pose', Suffix.GROUP, initials=initials)
+        cls.systems_grp = MayaDagObject.compose(Side.CENTER, 'Systems', Suffix.GROUP, initials=initials)
+        cls.bind_grp = MayaDagObject.compose(Side.CENTER, 'Bind', Suffix.GROUP, initials=initials)
 
     @classmethod
     def initialize(cls):
@@ -63,7 +63,7 @@ class Character:
 def _load():
     """Find a character to use as context"""
     def _try_set(object):
-        object = MayaObject(object)
+        object = MayaDagObject(object)
         name_attr = object.attr(_NAME_ATTR)
         initials_attr = object.attr(_INITIALS_ATTR)
         if (name_attr.exists() and initials_attr.exists()):
@@ -123,7 +123,7 @@ def _create_ui():
             return
         Character.setCharacter(initials, name)
 
-        char_grp = MayaObject(cmds.group(n='{}_markers'.format(Character.name), em=True))
+        char_grp = MayaDagObject(cmds.group(n='{}_markers'.format(Character.name), em=True))
         char_grp.addAttr(_NAME_ATTR, value=name, type_='string', lock=True)
         char_grp.addAttr(_INITIALS_ATTR, value=initials, type_='string', lock=True)
         char_grp.addAttr(_LAYOUT_SIZE_ATTR, value=50, type_='float', keyable=False)
