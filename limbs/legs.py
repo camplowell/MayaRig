@@ -51,7 +51,7 @@ class HumanoidLeg(Limb):
     
     def _generate_bind_joints(self, pose_joints: JointCollection) -> JointCollection:
         to_bind = [pose_joints['Hip'], pose_joints['Knee'], pose_joints['Ankle'], pose_joints['BallOfFoot']]
-        bind_joints = Joint.variants(to_bind, suffix=Suffix.BIND_JOINT, clear_attributes=True, keep_root=False)
+        bind_joints = Joint.variants(to_bind, suffix=Suffix.BIND_JOINT, root_parent=Character.bind_grp)
         if bind_joints[0].parent() == Character.pose_grp:
             cmds.parent(bind_joints[0], Character.bind_grp)
         for index, pose_joint in enumerate(to_bind):

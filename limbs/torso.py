@@ -91,7 +91,7 @@ class Forward(Limb):
     
     def _generate_bind_joints(self, pose_joints: JointCollection):
         to_bind = ['Pelvis', 'Spine0', 'Spine1', 'Spine2']
-        bind_joints = Joint.variants([pose_joints[joint] for joint in to_bind], suffix=Suffix.BIND_JOINT)
+        bind_joints = Joint.variants([pose_joints[joint] for joint in to_bind], suffix=Suffix.BIND_JOINT, root_parent=Character.bind_grp)
         for joint in bind_joints:
             joint.unlockAttrs(['translate', 'rotate', 'scale'])
         if pose_joints['Pelvis'].parent() == Character.pose_grp:
@@ -174,7 +174,10 @@ class Simple(Limb):
         Nodes.Structures.parentConstraint(pelvis_ctrl, pelvis)
 
     def _generate_bind_joints(self, pose_joints: JointCollection) -> JointCollection:
-        return super()._generate_bind_joints(pose_joints)
+        bind_joints = Joint.variants(pose_joints, suffix=Suffix.BIND_JOINT, root_parent=Character.bind_grp)
+        if bind_joints[0].parent() == Character.pose_grp:
+            cmds.parent(bind_joints[0], Character.bind_grp)
+        return bind_joints
     
     def _cleanup(self, pose_joints: JointCollection, bind_joints: JointCollection):
         for joint in pose_joints:

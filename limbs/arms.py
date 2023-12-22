@@ -68,7 +68,7 @@ class HumanoidArm(Limb):
         self._hand_controls(pose_joints)
 
     def _generate_bind_joints(self, pose_joints: JointCollection) -> JointCollection:
-        bind_joints:JointCollection = Joint.variants(pose_joints, suffix=Suffix.BIND_JOINT)
+        bind_joints:JointCollection = Joint.variants(pose_joints, suffix=Suffix.BIND_JOINT, root_parent=Character.bind_grp)
 
         for i, joint in enumerate(bind_joints):
             if joint.joint_type() == 'FingerTip':

@@ -52,7 +52,7 @@ class Joint(MayaDagObject):
         return ret
 
     @classmethod
-    def variants(cls, joints:'List[Joint]|JointCollection', suffix:str, * , remap_parent=True, clear_attributes=False, keep_root=True, root_parent=None, onCollision=CollisionBehavior.THROW) -> JointCollection:
+    def variants(cls, joints:'List[Joint]|JointCollection', suffix:str, * , remap_parent=True, clear_attributes=False, keep_root=True, root_parent=None, override_parent=False, onCollision=CollisionBehavior.THROW) -> JointCollection:
         """ Create a variation of an existing collection of joints.
 
         Args:
@@ -61,7 +61,8 @@ class Joint(MayaDagObject):
             remap_parent: Parent new bones to the specified variant of its parent, if it exists.
             clear_attributes: Do not transfer user-defined attributes to the new chain.
             keep_root: Keep root bones marked as such in the new chain.
-            root_parent: Override the parent of the first bone in the chain.
+            root_parent: Set the (fallback) parent of the first bone in the chain.
+            override_parent: Set the parent to root_parent even if a remapped parent exists.
             onCollision: What to do if the given bones already exist. `IGNORE` will cause issues.
 
         Returns:
@@ -82,12 +83,19 @@ class Joint(MayaDagObject):
                 new_joint.clear_attributes(keep=[_JOINT_TYPE_ATTR])
             
             current_parent = new_joint.parent()
-            if i == 0 and root_parent and current_parent != root_parent:
-                cmds.parent(new_joint, root_parent)
-            elif (remap_parent or (current_parent in joints)) and current_parent.is_internal():
-                desired_parent = current_parent.but_with(suffix=suffix)
-                if current_parent != desired_parent and desired_parent.exists():
-                    cmds.parent(new_joint, desired_parent)
+
+            desired_parent = None
+            if current_parent.is_internal() and (remap_parent or (current_parent in joints)):
+                _desired_parent = current_parent.but_with(suffix=suffix)
+                if _desired_parent.exists():
+                    desired_parent = _desired_parent
+            
+            if (i == 0 and root_parent) and ((not desired_parent) or override_parent):
+                desired_parent = root_parent
+            
+            if desired_parent and desired_parent.exists() and desired_parent != current_parent:
+                cmds.parent(new_joint, desired_parent)
+                
         return JointCollection(ret)
 
     def mark_root(self, generator:str, symmetrical:bool=False):
