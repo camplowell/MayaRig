@@ -1,8 +1,6 @@
-
-
 from maya import mel
 
-from ..core import groups, selection, controls
+from ..core import groups, selection, controls, twist_joint
 from ..core.limb import Limb
 from ..core.maya_object import *
 from ..core.joint import Joint, JointCollection
@@ -21,6 +19,7 @@ class HumanoidArm(Limb):
             clavicle = Joint.marker(Side.LEFT, 'Clavicle', (2, 0, 2), size=10)
             root = clavicle
         shoulder = Joint.marker(Side.LEFT, 'Shoulder', (13, -1, -3.5), size=6)
+        shoulder.addAttr('twistRest', (0, -45, -45), 'float3', keyable=False)
         if not has_clavicle:
             root = shoulder
         
@@ -68,6 +67,7 @@ class HumanoidArm(Limb):
         self._hand_controls(pose_joints)
 
     def _generate_bind_joints(self, pose_joints: JointCollection) -> JointCollection:
+        
         bind_joints:JointCollection = Joint.variants(pose_joints, suffix=Suffix.BIND_JOINT, root_parent=Character.bind_grp)
 
         for i, joint in enumerate(bind_joints):
@@ -75,6 +75,8 @@ class HumanoidArm(Limb):
                 joint.dissolve()
             else:
                 cmds.parentConstraint(pose_joints[i], joint)
+        
+        bind_joints.extend(twist_joint.ballJointTwist(pose_joints['Shoulder'], self.systems_group))
 
         return bind_joints
     

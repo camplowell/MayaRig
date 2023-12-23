@@ -185,6 +185,12 @@ class Joint(MayaDagObject):
     def joint_type(self):
         """Get the indicated type of this joint"""
         return self.attr(_JOINT_TYPE_ATTR).get_str()
+    
+    def set_joint_type(self, type:str):
+        if self.attr(_JOINT_TYPE_ATTR).exists():
+            self.attr(_JOINT_TYPE_ATTR).set(type)
+        else:
+            self.addAttr(_JOINT_TYPE_ATTR, value=type, type_='string', channelBox=False, lock=True)
 
     def control_size(self):
         """Get the control size of this joint"""
@@ -301,7 +307,7 @@ class Joint(MayaDagObject):
             cmds.parent(children, self)
 
 class JointCollection(Iterable):
-    def __init__(self, joints:List[Joint]):
+    def __init__(self, joints:'List[Joint]|JointCollection'):
         self._joints = list(joints)
         self._cache:Dict[str, List[Joint]] = dict()
     
@@ -354,6 +360,16 @@ class JointCollection(Iterable):
         if len(result) == 1:
             return result[0]
         return result
+    
+    def push(self, joint:Joint):
+        if not joint.exists():
+            raise ValueError('No such joint: {}'.format(joint))
+        if joint in self._joints:
+            raise ValueError('{} is already in the collection'.format(joint))
+        self._joints.append(joint)
+
+    def extend(self, joints:'Iterable[Joint]'):
+        self._joints.extend(joints)
     
     def pop(self, index):
         if type(index) == str and index not in self._cache:

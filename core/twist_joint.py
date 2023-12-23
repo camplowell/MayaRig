@@ -1,17 +1,16 @@
-from collections import namedtuple
-from typing import NamedTuple
-from maya import mel, cmds
+from . import selection
+from .context import Character
+from maya import cmds
 from maya.api import OpenMaya as om
 
-from .maya_object import MayaAttribute, MayaDagObject
-from .joint import Joint
+from .maya_object import CollisionBehavior, MayaAttribute, MayaDagObject, Suffix
+from .joint import Joint, JointCollection
 from . import nodetree, groups
 
 def swingTwist(target:'MayaDagObject'):
 	"""Returns a swing and twist Euler (rotate order taken from target)"""
 	reference:om.MQuaternion = om.MEulerRotation(*target.attr('twistRest').get_vec((0, 0, 0)), target.rotateOrder.get()).asQuaternion()
 	reference_twist:om.MQuaternion = om.MQuaternion(reference.x, 0, 0, reference.w).normal()
-	reference_swing = reference_twist.inverse() * reference
 	
 	rotation = nodetree.decomposeMatrix(
 		nodetree.matMult(
@@ -55,8 +54,6 @@ def swingTwist(target:'MayaDagObject'):
 		owner=target
 	)
 
-	
-
 	swing_euler = nodetree.quat2euler(
 		swing,
 		rotateOrder=target.rotateOrder,
@@ -71,24 +68,35 @@ def swingTwist(target:'MayaDagObject'):
 
 	return (swing_euler, twist_euler)
 
-def ballJointTwist(joint:Joint, systems_grp:MayaDagObject, parent:MayaDagObject, subdivisions=1):
-	mel.eval('ik2Bsolver;')
+def _createTwistSubdivisions(joint:Joint, swing_joint:MayaDagObject, twist_joint:MayaDagObject, subdivisions=1) -> JointCollection:
+	bind_joints = JointCollection([])
+
+	step = joint.child().translate_.get_vec() * (1.0 / (subdivisions + 1))
+	selection.set(joint.but_with(suffix=Suffix.BIND_JOINT))
+	for i in range(subdivisions + 1):
+		t = i / (subdivisions + 1)
+		step_joint = joint.but_with(name='{}Twist'.format(joint.name), suffix=Suffix.BIND_JOINT).resolve_collisions()
+		cmds.joint(n=step_joint, p=step if i > 0 else (0, 0, 0), r=True, rad=joint.radius.get())
+		step_joint.set_joint_type('Twist')
+		cmds.orientConstraint(swing_joint, step_joint, w=(1.0 - t))
+		if i > 0:
+			cmds.orientConstraint(twist_joint, step_joint, w=t)
+		bind_joints.push(step_joint)
+	return bind_joints
+
+def ballJointTwist(joint:Joint, systems_grp:MayaDagObject, subdivisions=1) -> JointCollection:
 	twist_grp = groups.new_at(joint, suffix='twistGrp', parent=systems_grp)
 	nodetree.parentConstraint(joint.parent(), twist_grp)
 
 	twist_root = joint.but_with(suffix='noTwistRaw')
 	twist_tip = joint.but_with(suffix='twistRaw')
 	cmds.duplicate(joint, n=twist_root, po=True)
-	cmds.duplicate(joint.child(), n=twist_tip, po=True)
+	selection.set(twist_root)
+	cmds.joint(n=twist_tip, p=joint.child().translate_.get(), r=True, rad=joint.radius.get())
 	cmds.parent(twist_root, twist_grp)
-	cmds.parent(twist_tip, twist_root)
 
 	swing, twist = swingTwist(joint)
 	swing >> twist_root.rotate
 	twist >> twist_tip.rotate
-
-	twist_root.attr('displayLocalAxis').set(1)
-	twist_tip.attr('displayLocalAxis').set(1)
 	
-	twist_step = nodetree.mult3D(twist, (1.0 / subdivisions, 0.0, 0.0), owner=joint)
-	
+	return _createTwistSubdivisions(joint, twist_root, twist_tip, subdivisions=subdivisions)
