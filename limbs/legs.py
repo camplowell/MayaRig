@@ -7,7 +7,7 @@ from maya import mel
 from ..core.limb import Limb
 from ..core.maya_object import MayaDagObject, Side, Suffix
 from ..core.joint import Joint, JointCollection
-from ..core import selection, controls, groups
+from ..core import selection, controls, groups, twist_joint
 from ..core.nodes import Nodes
 from ..core.context import Character
 
@@ -19,6 +19,7 @@ class HumanoidLeg(Limb):
     def generateMarkers(cls, * , side=Side.LEFT, symmetrical=True):
         hip = Joint.marker(Side.LEFT, 'Hip', (7, 80, 0), size=8)
         hip.addAttr('poleSize', 2, type_='float', keyable=False, min=0.0)
+        hip.addAttr('twistRest', (0, -45, -45), type_='float3', keyable=False)
         Joint.marker(Side.LEFT, 'Knee', (7, 45, 1), size=7)
         ankle = Joint.marker(Side.LEFT, 'Ankle', (7, 10, -1), size=5)
         ankle.addAttr('footControlOutset', 2, type_='float', keyable=False)
@@ -52,10 +53,15 @@ class HumanoidLeg(Limb):
     def _generate_bind_joints(self, pose_joints: JointCollection) -> JointCollection:
         to_bind = [pose_joints['Hip'], pose_joints['Knee'], pose_joints['Ankle'], pose_joints['BallOfFoot']]
         bind_joints = Joint.variants(to_bind, suffix=Suffix.BIND_JOINT, root_parent=Character.bind_grp)
+        generated = JointCollection([])
         if bind_joints[0].parent() == Character.pose_grp:
             cmds.parent(bind_joints[0], Character.bind_grp)
         for index, pose_joint in enumerate(to_bind):
-            cmds.parentConstraint(pose_joint, bind_joints[index])
+            if pose_joint.joint_type() == 'Hip':
+                generated.extend(twist_joint.ballJointTwist(pose_joint, bind_joints[index], self.systems_group))
+            else:
+                cmds.parentConstraint(pose_joint, bind_joints[index])
+        bind_joints.extend(generated)
         return bind_joints
     
     def _cleanup(self, pose_joints: JointCollection, bind_joints: JointCollection):
