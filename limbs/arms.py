@@ -69,14 +69,15 @@ class HumanoidArm(Limb):
     def _generate_bind_joints(self, pose_joints: JointCollection) -> JointCollection:
         
         bind_joints:JointCollection = Joint.variants(pose_joints, suffix=Suffix.BIND_JOINT, root_parent=Character.bind_grp)
-
+        generated = JointCollection([])
         for i, joint in enumerate(bind_joints):
             if joint.joint_type() == 'FingerTip':
                 joint.dissolve()
+            elif joint.joint_type() == 'Shoulder':
+                generated.extend(twist_joint.ballJointTwist(pose_joints[i], joint, self.systems_group, 1))
             else:
                 cmds.parentConstraint(pose_joints[i], joint)
-        
-        bind_joints.extend(twist_joint.ballJointTwist(pose_joints['Shoulder'], self.systems_group))
+        bind_joints.extend(generated)
 
         return bind_joints
     

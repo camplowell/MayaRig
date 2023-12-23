@@ -68,23 +68,27 @@ def swingTwist(target:'MayaDagObject'):
 
 	return (swing_euler, twist_euler)
 
-def _createTwistSubdivisions(joint:Joint, swing_joint:MayaDagObject, twist_joint:MayaDagObject, subdivisions=1) -> JointCollection:
-	bind_joints = JointCollection([])
-
-	step = joint.child().translate_.get_vec() * (1.0 / (subdivisions + 1))
+def _createTwistSubdivisions(joint:Joint, bind_joint:Joint, swing_joint:MayaDagObject, twist_joint:MayaDagObject, steps=2) -> JointCollection:
+	bind_joints = JointCollection([bind_joint])
+	children = bind_joint.children()
+	if children:
+		cmds.parent(*children, w=True)
+	cmds.parentConstraint(swing_joint, bind_joint)
+	step = joint.child().translate_.get_vec() * (1.0 / (steps + 1))
 	selection.set(joint.but_with(suffix=Suffix.BIND_JOINT))
-	for i in range(subdivisions + 1):
-		t = i / (subdivisions + 1)
+	for i in range(steps):
+		t = (i + 1) / (steps)
 		step_joint = joint.but_with(name='{}Twist'.format(joint.name), suffix=Suffix.BIND_JOINT).resolve_collisions()
-		cmds.joint(n=step_joint, p=step if i > 0 else (0, 0, 0), r=True, rad=joint.radius.get())
+		cmds.joint(n=step_joint, p=step, r=True, rad=joint.radius.get() * 0.5)
 		step_joint.set_joint_type('Twist')
 		cmds.orientConstraint(swing_joint, step_joint, w=(1.0 - t))
-		if i > 0:
-			cmds.orientConstraint(twist_joint, step_joint, w=t)
+		cmds.orientConstraint(twist_joint, step_joint, w=t)
 		bind_joints.push(step_joint)
+	if children:
+		cmds.parent(*children, bind_joints[-1])
 	return bind_joints
 
-def ballJointTwist(joint:Joint, systems_grp:MayaDagObject, subdivisions=1) -> JointCollection:
+def ballJointTwist(joint:Joint, bind_joint:Joint, systems_grp:MayaDagObject, steps=2) -> JointCollection:
 	twist_grp = groups.new_at(joint, suffix='twistGrp', parent=systems_grp)
 	nodetree.parentConstraint(joint.parent(), twist_grp)
 
@@ -99,4 +103,4 @@ def ballJointTwist(joint:Joint, systems_grp:MayaDagObject, subdivisions=1) -> Jo
 	swing >> twist_root.rotate
 	twist >> twist_tip.rotate
 	
-	return _createTwistSubdivisions(joint, twist_root, twist_tip, subdivisions=subdivisions)
+	return _createTwistSubdivisions(joint, bind_joint, twist_root, twist_tip, steps=steps)
