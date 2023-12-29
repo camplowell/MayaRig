@@ -1,38 +1,22 @@
-from typing import Dict, List
-
 from maya import cmds
 
-from ..core import selection, controls
-from ..core.nodes import Nodes
+from ..core import selection, controls, nodetree
 from ..core.joint import Joint, JointCollection
 from ..core.limb import Limb
 from ..core.context import Character
 from ..core.maya_object import Side, MayaDagObject, Suffix
 
-def _mixLocalRots(pelvis_ctrl, middle_ctrl, shoulder_ctrl, blend):
-    shoulder_rot = _rotQuat(shoulder_ctrl)
-    pelvis_rot = _rotQuat(pelvis_ctrl)
+def _mixLocalRots(pelvis_ctrl:MayaDagObject, middle_ctrl:MayaDagObject, shoulder_ctrl:MayaDagObject, blend:float):
+    shoulder_rot = nodetree.eulerToQuat(shoulder_ctrl.rotate, shoulder_ctrl.rotateOrder, owner=shoulder_ctrl)
+    pelvis_rot = nodetree.eulerToQuat(pelvis_ctrl.rotate, pelvis_ctrl.rotateOrder, owner=pelvis_ctrl)
 
-    mid_rotOffset = Nodes.quatSlerp(owner=middle_ctrl)
-    pelvis_rot >> mid_rotOffset.input1Quat
-    shoulder_rot >> mid_rotOffset.input2Quat
-    mid_rotOffset.inputT.set(blend)
+    mid_rotOffset = nodetree.quatSlerp(blend, pelvis_rot, shoulder_rot, owner=middle_ctrl)
 
-    mid_rotMat = Nodes.composeMatrix(owner=middle_ctrl)
-    mid_rotOffset.outputQuat >> mid_rotMat.attr('inputQuat')
-    mid_rotMat.attr('useEulerRotation').set(0)
+    mid_rotMat = nodetree.composeMatrix(inputQuat=mid_rotOffset, owner=middle_ctrl)
 
-    mid_offsetParent = Nodes.matMult(owner=middle_ctrl)
-    mid_rotMat.outputMatrix >> mid_offsetParent.matrixIn[0]
-    mid_offsetParent.matrixIn[1].set(middle_ctrl.offsetParentMatrix.get())
-    mid_offsetParent.matrixSum >> middle_ctrl.offsetParentMatrix
-    
+    mid_offsetParent = nodetree.matMult([mid_rotMat, middle_ctrl.offsetParentMatrix.get()], owner=middle_ctrl)
 
-def _rotQuat(control:MayaDagObject):
-    rot = Nodes.euler2quat(owner=control)
-    control.rotate >> rot.inputRotate
-    control.attr('rotateOrder') >> rot.rotateOrder
-    return rot.outputQuat
+    mid_offsetParent >> middle_ctrl.offsetParentMatrix
 
 class Forward(Limb):
     key='TorsoFK'
@@ -62,7 +46,7 @@ class Forward(Limb):
     def _generate_controls(self, pose_joints: JointCollection):
         self._orient_joints(pose_joints)
         control_grp = self.control_group
-        Nodes.Structures.parentConstraint(Character.cog_control, control_grp)
+        nodetree.parentConstraint(Character.cog_control, control_grp)
 
         cmds.makeIdentity(*pose_joints, jo=True) # Ensure spinal joints are aligned to the world
         pelvis_ctrl = self._make_pelvis_control(pose_joints)
@@ -94,9 +78,7 @@ class Forward(Limb):
         bind_joints = Joint.variants([pose_joints[joint] for joint in to_bind], suffix=Suffix.BIND_JOINT, root_parent=Character.bind_grp)
         for joint in bind_joints:
             joint.unlockAttrs(['translate', 'rotate', 'scale'])
-        if pose_joints['Pelvis'].parent() == Character.pose_grp:
-            cmds.parent(bind_joints['Pelvis'], Character.bind_grp)
-        
+
         for key in to_bind:
             cmds.parentConstraint(pose_joints[key], bind_joints[key])
         return JointCollection(bind_joints)
@@ -136,8 +118,7 @@ class Forward(Limb):
         if pelvis_children:
             cmds.parent(pelvis_children, pelvis, a=True)
         pelvis_nib.dissolve()
-
-        Nodes.Structures.parentConstraint(pelvis_ctrl, pelvis)
+        nodetree.parentConstraint(pelvis_ctrl, pelvis)
         return pelvis_ctrl
 
 class Simple(Limb):
@@ -156,7 +137,7 @@ class Simple(Limb):
         selection.set(cog)
 
     def _generate_controls(self, pose_joints: JointCollection):
-        Nodes.Structures.parentConstraint(Character.cog_control, self.control_group)
+        nodetree.parentConstraint(Character.cog_control, self.control_group)
 
         cmds.makeIdentity(*pose_joints, jo=True) # Ensure spinal joints are aligned to the world
         cog_bone = pose_joints.pop('CoG')
@@ -170,13 +151,13 @@ class Simple(Limb):
         cog_bone.dissolve()
         pelvis_ctrl = controls.saddle(pelvis, 'Pelvis', parent=self.control_group, axis=controls.Axis.Y)
         pelvis_ctrl.attr('rotateOrder').set('yzx')
-
-        Nodes.Structures.parentConstraint(pelvis_ctrl, pelvis)
+        nodetree.parentConstraint(pelvis_ctrl, pelvis)
 
     def _generate_bind_joints(self, pose_joints: JointCollection) -> JointCollection:
         bind_joints = Joint.variants(pose_joints, suffix=Suffix.BIND_JOINT, root_parent=Character.bind_grp)
         if bind_joints[0].parent() == Character.pose_grp:
             cmds.parent(bind_joints[0], Character.bind_grp)
+        cmds.parentConstraint(pose_joints[0], bind_joints[0])
         return bind_joints
     
     def _cleanup(self, pose_joints: JointCollection, bind_joints: JointCollection):
