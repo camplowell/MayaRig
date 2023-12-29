@@ -1,72 +1,66 @@
 from . import selection
-from .context import Character
 from maya import cmds
 from maya.api import OpenMaya as om
 
-from .maya_object import CollisionBehavior, MayaAttribute, MayaDagObject, Suffix
+from .maya_object import MayaAttribute, MayaDagObject, Suffix
 from .joint import Joint, JointCollection
 from . import nodetree, groups
 
-def swingTwist(target:'MayaDagObject'):
-	"""Returns a swing and twist Euler (rotate order taken from target)"""
-	reference:om.MQuaternion = om.MEulerRotation(*target.attr('twistRest').get_vec((0, 0, 0)), target.rotateOrder.get()).asQuaternion()
+def swingTwist(rotation:MayaAttribute, reference:om.MQuaternion, owner:MayaDagObject):
+	"""Returns a swing and twist Euler (rotate order taken from owner)"""
 	reference_twist:om.MQuaternion = om.MQuaternion(reference.x, 0, 0, reference.w).normal()
-	
-	rotation = nodetree.decomposeMatrix(
-		nodetree.matMult(
-			[
-				target.worldMatrix.get() * target.parent().worldInverseMatrix.get(),
-				target.offsetParentMatrix, 
-				target.parent().worldMatrix.get() * target.worldInverseMatrix.get()
-			], 
-			owner=target
-		), 
-		rotateOrder=target.rotateOrder, 
-		owner=target
-	).outputQuat
+	reference_twist_euler:om.MVector = reference_twist.asEulerRotation().asVector()
 
-	relative_rotation = nodetree.quatProd(rotation, reference.inverse(), owner=target)
-
+	relative_rot = nodetree.quatProd(rotation, reference.inverse(), owner=owner, suffix='relativeRot')
 	relative_twist = nodetree.quatNormalize(
-		quatX=relative_rotation.obj.attr('outputQuatX'), 
-		quatW=relative_rotation.obj.attr('outputQuatW'), 
-		owner=target)
-	
+		quatX=relative_rot.obj.attr('outputQuatX'),
+		quatW=relative_rot.obj.attr('outputQuatW'),
+		owner=owner,
+		suffix='relativeTwist'
+	)
+
 	relative_swing = nodetree.quatProd(
-		nodetree.quatInvert(relative_twist, owner=target),
-		relative_rotation,
-		owner=target
+		nodetree.quatInvert(relative_twist, owner=owner, suffix='relativeTwistInv'),
+		relative_rot,
+		owner=owner,
+		suffix='relativeSwing'
 	)
 
 	swing = nodetree.quatProd(
 		nodetree.quatProd(
 			reference_twist.inverse(),
 			relative_swing,
-			owner=target
+			owner=owner
 		),
 		reference,
-		owner=target
-	)
-
-	twist = nodetree.quatProd(
-		reference_twist,
-		relative_twist,
-		owner=target
+		owner=owner,
+		suffix='swing'
 	)
 
 	swing_euler = nodetree.quat2euler(
 		swing,
-		rotateOrder=target.rotateOrder,
-		owner=target
+		owner.rotateOrder,
+		owner=owner,
+		suffix='swingEuler'
 	)
 
-	twist_euler = nodetree.quat2euler(
-		twist,
-		rotateOrder=target.rotateOrder,
-		owner=target
+	relative_twist_euler = nodetree.quat2euler(
+		relative_twist,
+		rotateOrder='xyz',
+		owner=owner,
+		suffix='relativeTwistEuler'
 	)
 
-	return (swing_euler, twist_euler)
+	twist_euler = nodetree.add3D(
+		[
+			relative_twist_euler,
+			reference_twist_euler
+   		],
+		owner=owner,
+		suffix='twistEuler'
+	)
+
+	return swing_euler, twist_euler
 
 def _createTwistSubdivisions(joint:Joint, bind_joint:Joint, swing_joint:MayaDagObject, twist_joint:MayaDagObject, steps=2) -> JointCollection:
 	bind_joints = JointCollection([bind_joint])
@@ -99,7 +93,23 @@ def ballJointTwist(joint:Joint, bind_joint:Joint, systems_grp:MayaDagObject, ste
 	cmds.joint(n=twist_tip, p=joint.child().translate_.get(), r=True, rad=joint.radius.get())
 	cmds.parent(twist_root, twist_grp)
 
-	swing, twist = swingTwist(joint)
+	rotation = nodetree.decomposeMatrix(
+		nodetree.matMult(
+			[
+				joint.worldMatrix.get() * joint.parent().worldInverseMatrix.get(),
+				joint.offsetParentMatrix, 
+				joint.parent().worldMatrix.get() * joint.worldInverseMatrix.get()
+			], 
+			owner=joint
+		), 
+		rotateOrder=joint.rotateOrder, 
+		owner=joint
+	).outputQuat
+
+
+	reference:om.MQuaternion = om.MEulerRotation(*joint.attr('twistRest').get_vec((0, 0, 0)), joint.rotateOrder.get()).asQuaternion()
+
+	swing, twist = swingTwist(rotation, reference, joint)
 	swing >> twist_root.rotate
 	twist >> twist_tip.rotate
 	
