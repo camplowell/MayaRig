@@ -99,7 +99,7 @@ class Joint(MayaDagObject):
         return JointCollection(ret)
     
 
-    def duplicate(self, * , name=..., suffix=..., parent=...) -> Joint:
+    def duplicate(self, * , name:str=..., suffix:str=..., parent:MayaDagObject=...) -> Joint:
         if not self.exists():
             raise ValueError('Cannot duplicate nonexistent object {}'.format(self))
         if name is ...:
