@@ -5,7 +5,7 @@ import maya.api.OpenMaya as om
 from maya import mel
 
 from ..core.limb import Limb
-from ..core.maya_object import MayaDagObject, Side, Suffix
+from ..core.maya_object import MayaDagObject, MayaObject, Side, Suffix
 from ..core.joint import Joint, JointCollection
 from ..core import selection, controls, groups, twist_joint
 from ..core.nodes import Nodes
@@ -19,7 +19,7 @@ class HumanoidLeg(Limb):
     def generateMarkers(cls, * , side=Side.LEFT, symmetrical=True):
         hip = Joint.marker(Side.LEFT, 'Hip', (7, 80, 0), size=8)
         hip.addAttr('poleSize', 2, type_='float', keyable=False, min=0.0)
-        hip.addAttr('twistRest', (0, -45, -45), type_='float3', keyable=False)
+        hip.addAttr('twistRest', (0, 0, -45), type_='float3', keyable=False)
         Joint.marker(Side.LEFT, 'Knee', (7, 45, 1), size=7)
         ankle = Joint.marker(Side.LEFT, 'Ankle', (7, 10, -1), size=5)
         ankle.addAttr('footControlOutset', 2, type_='float', keyable=False)
@@ -59,6 +59,13 @@ class HumanoidLeg(Limb):
         for index, pose_joint in enumerate(to_bind):
             if pose_joint.joint_type() == 'Hip':
                 generated.extend(twist_joint.ballJointTwist(pose_joint, bind_joints[index], self.systems_group))
+                half_hip = bind_joints[index].duplicate(name=bind_joints[index].name + 'Half')
+                half_hip.radius.set(half_hip.radius.get() * 1.5)
+                orient_constraint = MayaObject(cmds.orientConstraint(bind_joints[index], half_hip, w=0.5)[0])
+                hip_ref = pose_joint.duplicate(suffix='restPose', parent=self.systems_group)
+                cmds.orientConstraint(hip_ref, half_hip, w=0.5, mo=True)
+                orient_constraint.attr('interpType').set(2)
+                generated.extend([half_hip])
             else:
                 cmds.parentConstraint(pose_joint, bind_joints[index])
         bind_joints.extend(generated)
