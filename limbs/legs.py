@@ -10,6 +10,7 @@ from ..core.joint import Joint, JointCollection
 from ..core import selection, controls, groups, twist_joint
 from ..core.nodes import Nodes
 from ..core.context import Character
+from ..core.half_joint import half_joint
 
 class HumanoidLeg(Limb):
     key = 'HumanoidLeg'
@@ -59,13 +60,10 @@ class HumanoidLeg(Limb):
         for index, pose_joint in enumerate(to_bind):
             if pose_joint.joint_type() == 'Hip':
                 generated.extend(twist_joint.ballJointTwist(pose_joint, bind_joints[index], self.systems_group))
-                half_hip = bind_joints[index].duplicate(name=bind_joints[index].name + 'Half')
-                half_hip.radius.set(half_hip.radius.get() * 1.5)
-                orient_constraint = MayaObject(cmds.orientConstraint(bind_joints[index], half_hip, w=0.5)[0])
-                hip_ref = pose_joint.duplicate(suffix='restPose', parent=self.systems_group)
-                cmds.orientConstraint(hip_ref, half_hip, w=0.5, mo=True)
-                orient_constraint.attr('interpType').set(2)
-                generated.extend([half_hip])
+                generated.extend([half_joint(bind_joints[index], self.systems_group)])
+            elif pose_joint.joint_type() == 'Knee':
+                generated.extend(twist_joint.hingeJointTwist(pose_joint, bind_joints[index], self.systems_group))
+                generated.extend([half_joint(bind_joints[index], self.systems_group)])
             else:
                 cmds.parentConstraint(pose_joint, bind_joints[index])
         bind_joints.extend(generated)
