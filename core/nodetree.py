@@ -275,9 +275,12 @@ class DecomposeMatrixNode(MayaObject):
         self.outputScale = self.attr('outputScale')
         self._end_reserving()
 
-def decomposeMatrix(inputMatrix, * , rotateOrder:str, owner:MayaDagObject=None, side:Side=None, name:str=None, suffix:str='decomposeMatrix') -> DecomposeMatrixNode:
+def decomposeMatrix(inputMatrix, * , rotateOrder:str=..., owner:MayaDagObject=None, side:Side=None, name:str=None, suffix:str='decomposeMatrix') -> DecomposeMatrixNode:
     node = DecomposeMatrixNode(owner.but_with(side=side, name=name, suffix=suffix).resolve_collisions())
     cmds.shadingNode('decomposeMatrix', n=node, au=True)
+
+    if rotateOrder is ...:
+        rotateOrder = inputMatrix.obj.attr('rotateOrder')
     
     node.inputMatrix.set_or_connect(inputMatrix)
     node.rotateOrder.set_or_connect(rotateOrder)
