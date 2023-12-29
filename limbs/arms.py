@@ -25,6 +25,7 @@ class HumanoidArm(Limb):
         
         elbow = Joint.marker(Side.LEFT, 'Elbow', (31, -1, -4.5), size=5)
         elbow.addAttr('poleSize', 2, type_='float', keyable=False, min=0)
+        elbow.addAttr('twistRest', (-60, 0, 0), 'float3', keyable=False)
         wrist = Joint.marker(Side.LEFT, 'Wrist', (52, -1, -2.5), size=5)
 
         start_z = 0.5
@@ -75,6 +76,8 @@ class HumanoidArm(Limb):
                 joint.dissolve()
             elif joint.joint_type() == 'Shoulder':
                 generated.extend(twist_joint.ballJointTwist(pose_joints[i], joint, self.systems_group, 1))
+            elif joint.joint_type() == 'Elbow':
+                generated.extend(twist_joint.hingeJointTwist(pose_joints[i], joint, self.systems_group, 2))
             else:
                 cmds.parentConstraint(pose_joints[i], joint)
         bind_joints.extend(generated)
