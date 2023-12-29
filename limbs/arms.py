@@ -19,7 +19,7 @@ class HumanoidArm(Limb):
             clavicle = Joint.marker(Side.LEFT, 'Clavicle', (2, 0, 2), size=10)
             root = clavicle
         shoulder = Joint.marker(Side.LEFT, 'Shoulder', (13, -1, -3.5), size=6)
-        shoulder.addAttr('twistRest', (0, -45, -45), 'float3', keyable=False)
+        shoulder.addAttr('twistRest', (0, 0, -45), 'float3', keyable=False)
         if not has_clavicle:
             root = shoulder
         
