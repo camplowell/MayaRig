@@ -97,6 +97,22 @@ class Joint(MayaDagObject):
                 cmds.parent(new_joint, desired_parent)
                 
         return JointCollection(ret)
+    
+
+    def duplicate(self, * , name=..., suffix=..., parent=...) -> Joint:
+        if not self.exists():
+            raise ValueError('Cannot duplicate nonexistent object {}'.format(self))
+        if name is ...:
+            name = None
+        if suffix is ...:
+            suffix = None
+        dup_joint = self.but_with(name=name, suffix=suffix, onCollision=CollisionBehavior.INCREMENT)
+        cmds.duplicate(self, n=dup_joint, po=True)
+        if parent is not ...:
+            cmds.parent(dup_joint, parent)
+        return dup_joint
+
+
 
     def mark_root(self, generator:str, symmetrical:bool=False):
         """Mark a joint as the root of a Limb.
