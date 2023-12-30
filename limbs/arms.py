@@ -75,7 +75,7 @@ class HumanoidArm(Limb):
             if joint.joint_type() == 'FingerTip':
                 joint.dissolve()
             elif joint.joint_type() == 'Shoulder':
-                generated.extend(twist_joint.ballJointTwist(pose_joints[i], joint, self.systems_group, 1))
+                generated.extend(twist_joint.ballJointTwist(pose_joints[i], joint, self.systems_group, 2))
             elif joint.joint_type() == 'Elbow':
                 generated.extend(twist_joint.hingeJointTwist(pose_joints[i], joint, self.systems_group, 2))
             else:

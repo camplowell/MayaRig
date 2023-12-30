@@ -59,10 +59,9 @@ class HumanoidLeg(Limb):
             cmds.parent(bind_joints[0], Character.bind_grp)
         for index, pose_joint in enumerate(to_bind):
             if pose_joint.joint_type() == 'Hip':
-                generated.extend(twist_joint.ballJointTwist(pose_joint, bind_joints[index], self.systems_group))
+                generated.extend(twist_joint.ballJointTwist(pose_joint, bind_joints[index], self.systems_group, 2))
                 generated.extend([half_joint(bind_joints[index], self.systems_group)])
             elif pose_joint.joint_type() == 'Knee':
-                generated.extend(twist_joint.hingeJointTwist(pose_joint, bind_joints[index], self.systems_group))
                 generated.extend([half_joint(bind_joints[index], self.systems_group)])
             else:
                 cmds.parentConstraint(pose_joint, bind_joints[index])
